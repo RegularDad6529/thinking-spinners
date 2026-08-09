@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thinking Spinner — Generator v1.0</title>
+<style>
+/* ============================================================
+   Design tokens
+   ============================================================ */
+:root{
+  --paper:#EDE9F5;
+  --paper-2:#E4DEF0;
+  --panel:#FFFFFF;
+  --ink:#1B1728;
+  --ink-soft:#6A6283;
+  --ink-faint:#948CAC;
+  --line:#DCD5EA;
+  --violet:#4B2FD6;
+  --violet-ink:#2F1B94;
+  --violet-wash:#EDE8FF;
+  --amber:#D98216;
+  --amber-wash:#FDF0DC;
+  --stage:#131020;
+  --danger:#C22F52;
+  --r:14px;
+  --r-sm:9px;
+  --display:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --shadow:0 1px 0 rgba(27,23,40,.04), 0 6px 24px -12px rgba(27,23,40,.35);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:76px;
+}
+body:not(.mode-advanced) .adv{display:none !important}
+
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--violet-ink)}
+
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px;border-radius:4px}
+
+/* ============================================================
+   Top bar
+   ============================================================ */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:12px 20px;
+  background:rgba(237,233,245,.88);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand h1{
+  font-family:var(--display);
+  font-weight:800;font-size:17px;letter-spacing:-.02em;
+  text-transform:uppercase;margin:0;
+}
+.brand .ver{
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  color:var(--ink-faint);border:1px solid var(--line);
+  padding:2px 6px;border-radius:20px;
+}
+/* signature: the wordmark is itself a thinking spinner */
+.mark{width:26px;height:26px;position:relative;flex:0 0 auto}
+.mark i{
+  position:absolute;left:50%;top:50%;width:3px;height:7px;margin:-13px 0 0 -1.5px;
+  background:var(--ink);border-radius:2px;transform-origin:50% 13px;opacity:.18;
+  animation:markspin 1.6s steps(8,end) infinite;
+}
+@keyframes markspin{0%,100%{opacity:.18}12%{opacity:1}}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+.segmented{display:inline-flex;background:var(--paper-2);border-radius:999px;padding:3px;border:1px solid var(--line)}
+.segmented button{
+  border:0;background:transparent;border-radius:999px;cursor:pointer;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 14px;color:var(--ink-soft);
+}
+.segmented button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.wrap{
+  display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);
+  gap:24px;align-items:start;
+  max-width:1320px;margin:0 auto;padding:24px 20px 8px;
+}
+@media (max-width:960px){
+  .wrap{grid-template-columns:1fr;padding:16px 14px 8px}
+  .col-preview{order:-1}
+}
+
+/* ============================================================
+   Panels & fields
+   ============================================================ */
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;
+}
+.panel>summary,.panel-head{
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  padding:13px 16px;list-style:none;
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-soft);user-select:none;
+}
+.panel>summary::-webkit-details-marker{display:none}
+.panel>summary::after{
+  content:"";margin-left:auto;width:7px;height:7px;border-right:1.5px solid var(--ink-faint);
+  border-bottom:1.5px solid var(--ink-faint);transform:rotate(45deg);transition:transform .18s ease;
+}
+.panel[open]>summary::after{transform:rotate(-135deg)}
+.panel>summary:hover{color:var(--ink)}
+.panel-body{padding:2px 16px 16px}
+.panel .count{
+  margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-faint);
+  letter-spacing:.08em;
+}
+.panel>summary .count{margin-left:0}
+
+.field{margin:0 0 13px}
+.field:last-child{margin-bottom:0}
+.field>label,.legend{
+  display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+}
+.hint{font-size:12px;color:var(--ink-faint);margin-top:5px;line-height:1.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+input[type=text],input[type=number],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:#FBFAFE;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{
+  border-color:var(--violet);background:#fff;outline:none;box-shadow:0 0 0 3px var(--violet-wash)
+}
+input[type=color]{
+  width:100%;height:36px;padding:2px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:#FBFAFE;cursor:pointer;
+}
+input[type=range]{width:100%;accent-color:var(--violet)}
+textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:12px}
+
+label.check{
+  display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);
+  text-transform:none;letter-spacing:0;font-family:var(--body);cursor:pointer;
+}
+label.check input{accent-color:var(--violet);width:15px;height:15px}
+
+/* radio pills */
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills label{
+  position:relative;display:inline-flex;align-items:center;gap:6px;
+  padding:6px 11px;border:1px solid var(--line);border-radius:999px;cursor:pointer;
+  font-size:12.5px;background:#FBFAFE;
+}
+.pills input{position:absolute;opacity:0;width:0;height:0}
+.pills label:has(input:checked){background:var(--violet-wash);border-color:#BFAEFF;color:var(--violet-ink);font-weight:600}
+.pills label:has(input:focus-visible){outline:2px solid var(--violet);outline-offset:2px}
+
+/* shape picker */
+.shapes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.shapes label{
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 2px 7px;
+  border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;background:#FBFAFE;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+}
+.shapes input{position:absolute;opacity:0;width:0;height:0}
+.shapes label:has(input:checked){background:var(--violet-wash);border-color:#BFAEFF;color:var(--violet-ink)}
+.shapes .g{display:block;width:22px;height:14px;background:var(--ink);opacity:.75}
+.shapes .g.rect{border-radius:0}
+.shapes .g.rounded{border-radius:4px}
+.shapes .g.capsule{border-radius:99px}
+.shapes .g.line{height:3px;margin:5.5px 0;border-radius:99px}
+.shapes .g.wedge{background:none;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:14px solid var(--ink);opacity:.75}
+
+/* slider with numeric readout */
+.slider{display:grid;grid-template-columns:1fr 62px;gap:10px;align-items:center}
+.slider output,.slider input[type=number]{
+  font-family:var(--mono);font-size:11px;text-align:right;
+}
+.slider input[type=number]{padding:5px 6px}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;
+  letter-spacing:.06em;color:var(--ink-faint);text-transform:uppercase;margin-top:3px}
+
+/* ============================================================
+   Thoughts editor  — the list is the wheel, unrolled
+   ============================================================ */
+.thoughts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.trow{
+  display:flex;align-items:center;gap:8px;padding:6px 8px 6px 6px;
+  border:1px solid var(--line);border-radius:var(--r-sm);background:#FBFAFE;
+}
+.trow.live{background:var(--amber-wash);border-color:#EFCB8C}
+.trow.drag-over{border-color:var(--violet);box-shadow:0 0 0 3px var(--violet-wash)}
+.trow.dragging{opacity:.4}
+.grip{
+  cursor:grab;color:var(--ink-faint);padding:2px 3px;border:0;background:none;line-height:1;
+  font-size:15px;touch-action:none;
+}
+.grip:active{cursor:grabbing}
+/* the spoke dial: shows where this thought sits on the wheel */
+.spoke{width:17px;height:17px;flex:0 0 auto;position:relative;border-radius:50%;
+  border:1px solid var(--line);background:#fff}
+.spoke i{position:absolute;left:50%;top:50%;width:2px;height:6px;margin:-8.5px 0 0 -1px;
+  background:var(--ink-faint);border-radius:2px;transform-origin:50% 8.5px}
+.trow.live .spoke{border-color:#EFCB8C}
+.trow.live .spoke i{background:var(--amber)}
+.tnum{font-family:var(--mono);font-size:10px;color:var(--ink-faint);width:15px;text-align:right}
+.trow input.tinput{flex:1 1 auto;min-width:0;padding:5px 8px;background:#fff}
+.trow select.ttype{width:auto;flex:0 0 auto;padding:5px 6px;font-size:11.5px;background:#fff}
+.iconbtn{
+  border:1px solid transparent;background:none;cursor:pointer;color:var(--ink-soft);
+  border-radius:6px;padding:3px 6px;line-height:1;font-size:13px;
+}
+.iconbtn:hover{background:var(--paper-2);color:var(--ink)}
+.tdetail{
+  border:1px solid var(--line);border-top:0;border-radius:0 0 var(--r-sm) var(--r-sm);
+  background:var(--panel);padding:12px;margin:-7px 0 0;
+}
+.tdetail h4{
+  margin:0 0 10px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-soft);font-weight:400;
+}
+.thumb{width:26px;height:26px;object-fit:cover;border-radius:5px;border:1px solid var(--line);background:#fff}
+
+.btn{
+  border:1px solid var(--line);background:var(--panel);border-radius:999px;
+  padding:8px 15px;cursor:pointer;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover{border-color:#C3B8DC;background:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn.primary:hover{background:var(--violet-ink);border-color:var(--violet-ink)}
+.btn.ghost{background:transparent}
+.btn.wide{width:100%;justify-content:center}
+.btn.sm{padding:5px 11px;font-size:12px;font-weight:500}
+
+/* ============================================================
+   Preview stage
+   ============================================================ */
+.col-preview{position:sticky;top:74px}
+@media (max-width:960px){.col-preview{position:static}}
+.stage-panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px;
+}
+.stage{
+  background:var(--stage);border-radius:10px;padding:16px;display:flex;justify-content:center;
+  background-image:radial-gradient(circle at 50% 0%, #221a3d 0%, #131020 70%);
+}
+#preview{
+  max-width:100%;max-height:min(60vh,620px);width:auto;height:auto;
+  display:block;border-radius:4px;
+}
+.transport{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.now{
+  margin-left:auto;text-align:right;line-height:1.25;
+}
+.now .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.now .val{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:-.01em;text-transform:uppercase}
+.frame{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.08em}
+
+.notes{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.note{
+  display:flex;gap:8px;font-size:12.5px;padding:8px 11px;border-radius:9px;
+  background:var(--amber-wash);color:#7A4A08;border:1px solid #F0D6A8;
+}
+.note.info{background:var(--violet-wash);color:var(--violet-ink);border-color:#CFC2FF}
+.note b{font-weight:700}
+
+/* ============================================================
+   Action bar
+   ============================================================ */
+.actions{
+  position:fixed;left:0;right:0;bottom:0;z-index:45;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:12px 20px;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line);
+}
+.actions .spacer{margin-left:auto}
+@media (max-width:640px){
+  .actions{padding:10px 12px;gap:8px}
+  .actions .btn{flex:1 1 auto;justify-content:center;padding:9px 10px;font-size:12.5px}
+  .actions .spacer{display:none}
+}
+
+/* progress */
+.progress{
+  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  background:rgba(27,23,40,.55);backdrop-filter:blur(3px);
+}
+.progress .card{
+  background:var(--panel);border-radius:var(--r);padding:22px 26px;width:min(340px,88vw);
+  box-shadow:0 20px 60px -20px rgba(0,0,0,.5);text-align:center;
+}
+.progress h3{margin:0 0 4px;font-family:var(--display);text-transform:uppercase;letter-spacing:-.01em;font-size:15px}
+.bar{height:9px;border-radius:99px;background:var(--paper-2);overflow:hidden;margin:14px 0 8px}
+.bar i{display:block;height:100%;width:0;background:var(--violet);transition:width .15s linear}
+.progress .pct{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.toast{
+  position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);
+  background:var(--ink);color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:70;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  .mark i{opacity:.4 !important}
+}
+</style>
+</head>
+<body class="mode-basic">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" id="mark" aria-hidden="true"></span>
+    <h1>Thinking Spinner</h1>
+    <span class="ver">v1.0</span>
+  </div>
+  <div class="topbar-right">
+    <label class="sr" for="presetSelect">Example</label>
+    <select id="presetSelect" style="width:auto">
+      <option value="">Examples…</option>
+      <option value="default">Default Thinking</option>
+      <option value="collector">Collector Brain</option>
+      <option value="decision">Decision Loop</option>
+      <option value="overthinking">Overthinking</option>
+    </select>
+    <button class="btn sm" id="loadPresetBtn">Load preset</button>
+    <input type="file" id="presetFile" accept=".json,application/json" hidden>
+    <div class="segmented" role="group" aria-label="Interface mode">
+      <button type="button" id="modeBasic" aria-pressed="true">Basic</button>
+      <button type="button" id="modeAdvanced" aria-pressed="false">Advanced</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ==================== CONTROLS ==================== -->
+<div class="col-controls">
+
+  <details class="panel" open>
+    <summary>Creation</summary>
+    <div class="panel-body">
+      <div class="field">
+        <label for="f-name">Creation name</label>
+        <input type="text" id="f-name" data-bind="name" placeholder="Collector Brain">
+        <p class="hint">Used for the preset name and export filenames. Not drawn in the artwork.</p>
+      </div>
+      <div class="field">
+        <label for="f-title">Title</label>
+        <input type="text" id="f-title" data-bind="title" placeholder="THINKING…">
+        <label class="check" style="margin-top:9px"><input type="checkbox" id="f-showTitle" data-bind="showTitle"> Show the title on the artwork</label>
+        <p class="hint">Turn this off to keep the title as a note to yourself without drawing it.</p>
+      </div>
+      <div class="field">
+        <span class="legend">Thought structure</span>
+        <div class="pills">
+          <label><input type="radio" name="structure" data-bind="structure" value="associative">Associative</label>
+          <label><input type="radio" name="structure" data-bind="structure" value="sequential">Sequential</label>
+        </div>
+        <p class="hint" id="structureHint">Related thoughts without a necessary beginning or ending.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel" open>
+    <summary>Thoughts <span class="count" id="thoughtCount">8 thoughts</span></summary>
+    <div class="panel-body">
+      <div class="thoughts" id="thoughts"></div>
+      <button class="btn wide" id="addThought">+ Add thought</button>
+      <p class="hint">Thoughts are processed in this order. Drag a row to move it.</p>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Center</summary>
+    <div class="panel-body">
+      <div class="field">
+        <span class="legend">Center type</span>
+        <div class="pills">
+          <label><input type="radio" name="ctype" data-bind="center.type" value="none">None</label>
+          <label><input type="radio" name="ctype" data-bind="center.type" value="text">Text</label>
+          <label><input type="radio" name="ctype" data-bind="center.type" value="image">Image</label>
+          <label><input type="radio" name="ctype" data-bind="center.type" value="icon">Icon</label>
+        </div>
+      </div>
+      <div class="field" data-when="center.type=text">
+        <label for="f-ctext">Center text</label>
+        <input type="text" id="f-ctext" data-bind="center.text" placeholder="COLLECTOR">
+      </div>
+      <div class="field" data-when="center.type=image">
+        <span class="legend">Center image</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn sm" id="centerImgBtn">Choose image</button>
+          <button class="btn sm ghost" id="centerImgClear">Clear</button>
+          <img class="thumb" id="centerImgThumb" alt="" hidden>
+        </div>
+        <input type="file" id="centerImgFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+        <p class="hint">PNG, JPEG, WEBP or SVG. Stored in your browser only.</p>
+      </div>
+      <div class="field" data-when="center.type=icon">
+        <label for="f-cicon">Icon</label>
+        <select id="f-cicon" data-bind="center.icon"></select>
+      </div>
+      <div class="field adv" data-when="center.type=text|image|icon">
+        <label for="f-cscale">Center scale</label>
+        <div class="slider">
+          <input type="range" id="f-cscale" min="0.3" max="2.5" step="0.05" data-bind="center.scale" data-type="float">
+          <output for="f-cscale" id="o-cscale"></output>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Animation</summary>
+    <div class="panel-body">
+      <div class="field">
+        <span class="legend">Direction</span>
+        <div class="pills">
+          <label><input type="radio" name="dir" data-bind="animation.direction" value="cw">Clockwise</label>
+          <label><input type="radio" name="dir" data-bind="animation.direction" value="ccw">Counterclockwise</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-speed">Speed</label>
+        <input type="range" id="f-speed" min="1" max="5" step="1" value="3" list="speedTicks">
+        <datalist id="speedTicks"><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option></datalist>
+        <div class="ticks"><span>Very slow</span><span>Medium</span><span>Very fast</span></div>
+      </div>
+      <div class="field basic-only">
+        <span class="legend">Loop</span>
+        <div class="pills">
+          <label><input type="radio" name="loopBasic" value="continuous">Continuous</label>
+          <label><input type="radio" name="loopBasic" value="pause">Pause after rotation</label>
+        </div>
+      </div>
+
+      <div class="field adv">
+        <span class="legend">Loop type</span>
+        <div class="pills">
+          <label><input type="radio" name="loopAdv" data-bind="animation.loopType" value="continuous">Continuous</label>
+          <label><input type="radio" name="loopAdv" data-bind="animation.loopType" value="pause">Pause after loop</label>
+          <label><input type="radio" name="loopAdv" data-bind="animation.loopType" value="hold">Hold on a thought</label>
+          <label><input type="radio" name="loopAdv" data-bind="animation.loopType" value="custom">Custom sequence</label>
+        </div>
+      </div>
+      <div class="adv" data-when="animation.loopType=hold">
+        <div class="row2">
+          <div class="field">
+            <label for="f-holdIndex">Hold on</label>
+            <select id="f-holdIndex" data-bind="animation.holdIndex" data-type="number"></select>
+          </div>
+          <div class="field">
+            <label for="f-holdDur">Hold duration (ms)</label>
+            <input type="number" id="f-holdDur" min="0" step="100" data-bind="animation.holdDuration" data-type="number">
+          </div>
+        </div>
+      </div>
+      <div class="field adv" data-when="animation.loopType=custom">
+        <label for="f-sequence">Sequence</label>
+        <input type="text" id="f-sequence" placeholder="1,2,3,4,7,4,7,4,8">
+        <p class="hint">Thought numbers, comma separated, in playback order.</p>
+      </div>
+
+      <div class="adv">
+        <div class="row2">
+          <div class="field">
+            <label for="f-step">Step duration (ms)</label>
+            <input type="number" id="f-step" min="30" step="25" data-bind="animation.stepDuration" data-type="number">
+          </div>
+          <div class="field">
+            <label for="f-trans">Transition (ms)</label>
+            <input type="number" id="f-trans" min="0" step="25" data-bind="animation.transitionDuration" data-type="number">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-loopPause">Loop pause (ms)</label>
+            <input type="number" id="f-loopPause" min="0" step="100" data-bind="animation.loopPause" data-type="number">
+          </div>
+          <div class="field">
+            <label for="f-start">Start on</label>
+            <select id="f-start" data-bind="animation.startIndex" data-type="number"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Bars</summary>
+    <div class="panel-body">
+      <div class="field">
+        <span class="legend">Shape</span>
+        <div class="shapes">
+          <label><span class="g rect"></span>Rect<input type="radio" name="shape" data-bind="bars.shape" value="rectangle"></label>
+          <label><span class="g rounded"></span>Round<input type="radio" name="shape" data-bind="bars.shape" value="rounded"></label>
+          <label><span class="g capsule"></span>Capsule<input type="radio" name="shape" data-bind="bars.shape" value="capsule"></label>
+          <label><span class="g line"></span>Line<input type="radio" name="shape" data-bind="bars.shape" value="line"></label>
+          <label><span class="g wedge"></span>Wedge<input type="radio" name="shape" data-bind="bars.shape" value="wedge"></label>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="f-barColor">Bar color</label>
+          <input type="color" id="f-barColor" data-bind="bars.color">
+        </div>
+        <div class="field">
+          <label for="f-activeColor">Active thought</label>
+          <input type="color" id="f-activeColor" data-bind="bars.activeColor">
+        </div>
+      </div>
+      <div class="field basic-only">
+        <span class="legend">Bar size</span>
+        <div class="pills">
+          <label><input type="radio" name="barSizeBasic" value="small">Small</label>
+          <label><input type="radio" name="barSizeBasic" value="medium">Medium</label>
+          <label><input type="radio" name="barSizeBasic" value="large">Large</label>
+          <label><input type="radio" name="barSizeBasic" value="chunky">Chunky</label>
+          <label><input type="radio" name="barSizeBasic" value="slab">Slab</label>
+        </div>
+      </div>
+      <div class="adv">
+        <div class="field">
+          <label for="f-radius">Radius</label>
+          <div class="slider">
+            <input type="range" id="f-radius" min="0.04" max="0.4" step="0.005" data-bind="bars.radius" data-type="float">
+            <output id="o-radius"></output>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-barLen">Bar length</label>
+          <div class="slider">
+            <input type="range" id="f-barLen" min="0.01" max="0.55" step="0.005" data-bind="bars.length" data-type="float">
+            <output id="o-barLen"></output>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-barThick">Bar thickness</label>
+          <div class="slider">
+            <input type="range" id="f-barThick" min="0.004" max="0.32" step="0.002" data-bind="bars.thickness" data-type="float">
+            <output id="o-barThick"></output>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Trail</summary>
+    <div class="panel-body">
+      <div class="field basic-only">
+        <span class="legend">Trail</span>
+        <div class="pills">
+          <label><input type="radio" name="trailBasic" value="0">None</label>
+          <label><input type="radio" name="trailBasic" value="2">Short</label>
+          <label><input type="radio" name="trailBasic" value="3">Medium</label>
+          <label><input type="radio" name="trailBasic" value="5">Long</label>
+        </div>
+      </div>
+      <div class="adv">
+        <div class="field">
+          <label for="f-trailLen">Trail length</label>
+          <div class="slider">
+            <input type="range" id="f-trailLen" min="0" max="15" step="1" data-bind="trail.length" data-type="number">
+            <output id="o-trailLen"></output>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-trailFade">Trail fade</label>
+          <div class="slider">
+            <input type="range" id="f-trailFade" min="0" max="1" step="0.05" data-bind="trail.fade" data-type="float">
+            <output id="o-trailFade"></output>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-inactive">Inactive opacity</label>
+          <div class="slider">
+            <input type="range" id="f-inactive" min="0" max="1" step="0.05" data-bind="trail.inactiveOpacity" data-type="float">
+            <output id="o-inactive"></output>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-activeScale">Active scale</label>
+            <div class="slider">
+              <input type="range" id="f-activeScale" min="1" max="2" step="0.05" data-bind="trail.activeScale" data-type="float">
+              <output id="o-activeScale"></output>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-glow">Glow</label>
+            <div class="slider">
+              <input type="range" id="f-glow" min="0" max="40" step="1" data-bind="trail.glow" data-type="number">
+              <output id="o-glow"></output>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Background</summary>
+    <div class="panel-body">
+      <div class="field">
+        <div class="pills">
+          <label><input type="radio" name="bgtype" data-bind="background.type" value="color">Color</label>
+          <label><input type="radio" name="bgtype" data-bind="background.type" value="image">Image</label>
+          <label><input type="radio" name="bgtype" data-bind="background.type" value="transparent">Transparent</label>
+        </div>
+      </div>
+      <div class="field" data-when="background.type=color">
+        <label for="f-bgColor">Background color</label>
+        <input type="color" id="f-bgColor" data-bind="background.color">
+      </div>
+      <div data-when="background.type=image">
+        <div class="field">
+          <span class="legend">Background image</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn sm" id="bgImgBtn">Choose image</button>
+            <button class="btn sm ghost" id="bgImgClear">Clear</button>
+            <img class="thumb" id="bgImgThumb" alt="" hidden>
+          </div>
+          <input type="file" id="bgImgFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+        </div>
+        <div class="field">
+          <span class="legend">Fit</span>
+          <div class="pills">
+            <label><input type="radio" name="bgfit" data-bind="background.fit" value="cover">Cover</label>
+            <label><input type="radio" name="bgfit" data-bind="background.fit" value="contain">Contain</label>
+            <label><input type="radio" name="bgfit" data-bind="background.fit" value="stretch">Stretch</label>
+          </div>
+        </div>
+      </div>
+      <p class="hint" data-when="background.type=transparent">Transparent areas are kept in PNG and GIF exports.</p>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Text</summary>
+    <div class="panel-body">
+      <div class="row2">
+        <div class="field">
+          <label for="f-textColor">Text color</label>
+          <input type="color" id="f-textColor" data-bind="text.color">
+        </div>
+        <div class="field">
+          <label for="f-font">Font</label>
+          <select id="f-font" data-bind="text.font">
+            <option value="sans">Sans serif</option>
+            <option value="serif">Serif</option>
+            <option value="mono">Monospace</option>
+            <option value="boldsans">Bold sans</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-textSize">Text size</label>
+        <div class="slider">
+          <input type="range" id="f-textSize" min="10" max="96" step="1" data-bind="text.size" data-type="number">
+          <output id="o-textSize"></output>
+        </div>
+      </div>
+      <div class="field">
+        <span class="legend">Label position</span>
+        <div class="pills">
+          <label><input type="radio" name="tplace" data-bind="text.placement" value="outside">Outside the bar</label>
+          <label><input type="radio" name="tplace" data-bind="text.placement" value="inside">Inside the bar</label>
+        </div>
+      </div>
+      <div data-when="text.placement=inside">
+        <div class="field">
+          <label class="check"><input type="checkbox" id="f-fitBars" data-bind="text.fitBars"> Grow bars to fit the longest label</label>
+          <p class="hint">Leave this off to size the bars yourself in Advanced. Labels shrink to stay inside.</p>
+        </div>
+        <div class="field">
+          <span class="legend">Label colour on the bar</span>
+          <div class="pills">
+            <label><input type="radio" name="tonbar" data-bind="text.onBar" value="auto">Auto contrast</label>
+            <label><input type="radio" name="tonbar" data-bind="text.onBar" value="custom">Pick a colour</label>
+          </div>
+        </div>
+        <div class="field" data-when="text.onBar=custom">
+          <label for="f-onBarColor">Label on bar</label>
+          <input type="color" id="f-onBarColor" data-bind="text.onBarColor">
+        </div>
+      </div>
+      <div class="field adv" data-when="text.placement=outside">
+        <span class="legend">Label angle</span>
+        <div class="pills">
+          <label><input type="radio" name="tangle" data-bind="text.angle" value="upright">Upright</label>
+          <label><input type="radio" name="tangle" data-bind="text.angle" value="radial">Radial</label>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Captions</summary>
+    <div class="panel-body">
+      <div class="field">
+        <label for="f-capTop">Top caption</label>
+        <input type="text" id="f-capTop" data-bind="captions.top">
+      </div>
+      <div class="field">
+        <label for="f-capBottom">Bottom caption</label>
+        <input type="text" id="f-capBottom" data-bind="captions.bottom">
+      </div>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Output</summary>
+    <div class="panel-body">
+      <div class="field">
+        <span class="legend">Size</span>
+        <div class="pills">
+          <label><input type="radio" name="osize" data-bind="output.preset" value="square">Square</label>
+          <label><input type="radio" name="osize" data-bind="output.preset" value="portrait">Portrait</label>
+          <label><input type="radio" name="osize" data-bind="output.preset" value="landscape">Landscape</label>
+          <label><input type="radio" name="osize" data-bind="output.preset" value="custom">Custom</label>
+        </div>
+      </div>
+      <div class="row2" data-when="output.preset=custom">
+        <div class="field">
+          <label for="f-w">Width</label>
+          <input type="number" id="f-w" min="120" max="1600" step="20" data-bind="output.width" data-type="number">
+        </div>
+        <div class="field">
+          <label for="f-h">Height</label>
+          <input type="number" id="f-h" min="120" max="1600" step="20" data-bind="output.height" data-type="number">
+        </div>
+      </div>
+      <div class="row2 adv">
+        <div class="field">
+          <label for="f-fps">GIF frames</label>
+          <select id="f-fps" data-bind="output.fps" data-type="number">
+            <option value="0">One per thought</option>
+            <option value="8">8 fps</option>
+            <option value="12">12 fps</option>
+            <option value="20">20 fps</option>
+            <option value="25">25 fps</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-loopCount">Loop count</label>
+          <input type="number" id="f-loopCount" min="0" max="255" step="1" data-bind="output.loopCount" data-type="number">
+        </div>
+      </div>
+      <p class="hint adv">Loop count 0 repeats forever.</p>
+    </div>
+  </details>
+
+</div>
+
+<!-- ==================== PREVIEW ==================== -->
+<div class="col-preview">
+  <div class="stage-panel">
+    <div class="stage">
+      <canvas id="preview" width="800" height="800" role="img" aria-label="Live preview of your Thinking Spinner"></canvas>
+    </div>
+    <div class="transport">
+      <button class="btn sm" id="playBtn" aria-pressed="true">❚❚ Pause</button>
+      <button class="btn sm ghost" id="restartBtn">↺ Restart</button>
+      <span class="frame adv" id="frameReadout">Frame 1 / 8</span>
+      <div class="now">
+        <div class="lbl">Currently thinking</div>
+        <div class="val" id="nowThought">—</div>
+      </div>
+    </div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+</main>
+
+<div class="actions">
+  <button class="btn" id="randomizeBtn">Randomize style</button>
+  <button class="btn ghost" id="resetBtn">Reset</button>
+  <span class="spacer"></span>
+  <button class="btn adv" id="copyJsonBtn">Copy JSON</button>
+  <button class="btn" id="savePresetBtn">Save preset</button>
+  <button class="btn" id="pngBtn">Export PNG</button>
+  <button class="btn primary" id="gifBtn">Export GIF</button>
+</div>
+
+<div class="progress" id="progress" hidden>
+  <div class="card">
+    <h3 id="progTitle">Rendering GIF</h3>
+    <p class="pct" id="progNote">Preparing frames…</p>
+    <div class="bar"><i id="progBar"></i></div>
+    <p class="pct" id="progPct">0%</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   0. Small helpers
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function getPath(o, p) { return p.split(".").reduce((a, k) => (a == null ? a : a[k]), o); }
+function setPath(o, p, v) {
+  const ks = p.split("."), last = ks.pop();
+  ks.reduce((a, k) => a[k], o)[last] = v;
+}
+function slug(s) {
+  return (s || "thinking-spinner").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "thinking-spinner";
+}
+function hexToRgb(h) {
+  h = (h || "#000").replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return "rgb(" + Math.round(lerp(A[0], B[0], t)) + "," + Math.round(lerp(A[1], B[1], t)) + "," + Math.round(lerp(A[2], B[2], t)) + ")";
+}
+function rgba(hex, a) {
+  const c = hexToRgb(hex);
+  return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+}
+function mixRgba(a, b, t, alpha) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return "rgba(" + Math.round(lerp(A[0], B[0], t)) + "," + Math.round(lerp(A[1], B[1], t)) + "," + Math.round(lerp(A[2], B[2], t)) + "," + alpha + ")";
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("on"), 2200);
+}
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ============================================================
+   1. Constants
+   ============================================================ */
+const ICONS = {
+  brain: "🧠", wallet: "👛", heart: "❤️", question: "❓",
+  eye: "👁", skull: "💀", coin: "🪙", fire: "🔥"
+};
+const FONTS = {
+  sans: { family: 'system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif', weight: 600 },
+  serif: { family: 'Georgia,"Times New Roman",serif', weight: 600 },
+  mono: { family: 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace', weight: 600 },
+  boldsans: { family: 'system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif', weight: 800 }
+};
+const SPEEDS = [1200, 700, 400, 225, 125];
+const BAR_SIZES = {
+  small: [0.05, 0.02], medium: [0.075, 0.03], large: [0.14, 0.065],
+  chunky: [0.24, 0.13], slab: [0.36, 0.2]
+};
+const SIZES = { square: [800, 800], portrait: [800, 1000], landscape: [1000, 800] };
+const MAX_THOUGHTS = 16, MIN_THOUGHTS = 6;
+
+/* ============================================================
+   2. State
+   ============================================================ */
+function thought(content, type) {
+  return { type: type || "text", content: content || "", image: null, icon: "brain", pause: 0, emphasis: "normal", label: "" };
+}
+function defaultConfig() {
+  return {
+    format: "thinking-spinner", version: "1.0",
+    name: "Default Thinking",
+    title: "THINKING…",
+    showTitle: true,
+    structure: "associative",
+    center: { type: "none", text: "", image: null, icon: "brain", scale: 1 },
+    thoughts: ["Idea", "Question", "Maybe", "No", "Wait", "What if?", "Yes", "Do it"].map(t => thought(t)),
+    animation: {
+      direction: "cw", stepDuration: 400, transitionDuration: 100, loopPause: 0,
+      loopType: "continuous", holdIndex: 0, holdDuration: 1500, sequence: [], startIndex: 0
+    },
+    bars: { shape: "wedge", color: "#565270", activeColor: "#FFFFFF", radius: 0.16, length: 0.3, thickness: 0.11 },
+    trail: { length: 3, fade: 0.5, inactiveOpacity: 0.25, activeScale: 1.2, glow: 0 },
+    background: { type: "color", color: "#141020", image: null, fit: "cover" },
+    text: { color: "#EDE9F5", font: "sans", size: 60, angle: "upright", placement: "inside", fitBars: true, onBar: "auto", onBarColor: "#12101F" },
+    captions: { top: "", bottom: "" },
+    output: { preset: "square", width: 800, height: 800, fps: 0, loopCount: 0 }
+  };
+}
+
+const EXAMPLES = {
+  default: () => defaultConfig(),
+  collector: () => {
+    const c = defaultConfig();
+    c.name = "Collector Brain";
+    c.title = "COLLECTOR PROCESSING…";
+    c.structure = "associative";
+    c.center = { type: "icon", text: "", image: null, icon: "brain", scale: 1.1 };
+    c.thoughts = ["Artist", "Provenance", "Supply", "Price", "TDH", "FOMO", "Don't buy", "Cool JPEG"].map(t => thought(t));
+    c.thoughts[7].emphasis = "strong";
+    c.thoughts[7].pause = 1500;
+    c.bars = { shape: "capsule", color: "#3F3A63", activeColor: "#F5C66B", radius: 0.19, length: 0.07, thickness: 0.028 };
+    c.trail = { length: 3, fade: 0.55, inactiveOpacity: 0.2, activeScale: 1.25, glow: 14 };
+    c.background = { type: "color", color: "#100D1C", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#EDE9F5", font: "boldsans", size: 25, placement: "outside" });
+    c.captions = { top: "", bottom: "one of these is a lie" };
+    return c;
+  },
+  decision: () => {
+    const c = defaultConfig();
+    c.name = "Decision Loop";
+    c.title = "DECIDING";
+    c.structure = "sequential";
+    c.center = { type: "text", text: "?", image: null, icon: "brain", scale: 1.6 };
+    c.thoughts = ["Notice", "Weigh it", "Ask a friend", "Sleep on it", "Second guess", "Commit"].map(t => thought(t));
+    c.animation.stepDuration = 700;
+    c.animation.loopType = "pause";
+    c.animation.loopPause = 900;
+    c.bars = { shape: "wedge", color: "#2B4A46", activeColor: "#7BE0C0", radius: 0.15, length: 0.28, thickness: 0.1 };
+    c.trail = { length: 2, fade: 0.4, inactiveOpacity: 0.3, activeScale: 1.15, glow: 8 };
+    c.background = { type: "color", color: "#0B1615", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#DFF5EE", font: "serif", size: 52, placement: "inside" });
+    return c;
+  },
+  overthinking: () => {
+    const c = defaultConfig();
+    c.name = "Overthinking";
+    c.title = "IT'S FINE, EVERYTHING IS FINE";
+    c.structure = "associative";
+    c.center = { type: "text", text: "3AM", image: null, icon: "brain", scale: 1.2 };
+    c.thoughts = ["That email", "Was I rude?", "Money", "Should sleep", "Old regret", "Tomorrow", "Was I rude?", "Still awake", "The email again", "Was I rude?", "Sleep", "No"].map(t => thought(t));
+    c.animation.stepDuration = 150;
+    c.animation.direction = "ccw";
+    c.bars = { shape: "line", color: "#4A2C3C", activeColor: "#FF7A9A", radius: 0.16, length: 0.06, thickness: 0.03 };
+    c.trail = { length: 7, fade: 0.7, inactiveOpacity: 0.28, activeScale: 1.3, glow: 18 };
+    c.background = { type: "color", color: "#16090F", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#FFE6EC", font: "sans", size: 21, placement: "outside" });
+    c.captions = { bottom: "go to sleep", top: "" };
+    return c;
+  }
+};
+
+let cfg = defaultConfig();
+const ui = {
+  playing: true, time: 0, last: 0, lastActive: -1, openDetail: -1,
+  reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+};
+
+/* image cache for data URLs */
+const imgCache = new Map();
+function getImage(src) {
+  if (!src) return null;
+  if (imgCache.has(src)) {
+    const e = imgCache.get(src);
+    return e && e.complete && e.naturalWidth ? e : null;
+  }
+  const img = new Image();
+  img.onload = () => draw();
+  img.onerror = () => imgCache.set(src, null);
+  img.src = src;
+  imgCache.set(src, img);
+  return null;
+}
+
+/* ============================================================
+   3. Timeline
+   ============================================================ */
+function playOrder() {
+  const n = cfg.thoughts.length;
+  if (!n) return [0];
+  let order = [];
+  if (cfg.animation.loopType === "custom" && cfg.animation.sequence.length) {
+    order = cfg.animation.sequence.filter(i => i >= 0 && i < n);
+  }
+  if (!order.length) {
+    const s = clamp(cfg.animation.startIndex | 0, 0, n - 1);
+    for (let k = 0; k < n; k++) order.push((s + k) % n);
+  }
+  return order;
+}
+function buildTimeline() {
+  const order = playOrder();
+  const a = cfg.animation;
+  const steps = order.map((idx, pos) => {
+    let d = a.stepDuration + (cfg.thoughts[idx] ? (cfg.thoughts[idx].pause || 0) : 0);
+    if (a.loopType === "hold" && idx === a.holdIndex) d += a.holdDuration || 0;
+    if (pos === order.length - 1 && (a.loopType === "pause" || a.loopPause > 0)) d += a.loopPause || 0;
+    return { index: idx, duration: Math.max(30, d) };
+  });
+  let total = 0;
+  steps.forEach(s => { s.start = total; total += s.duration; });
+  return { steps, total, order };
+}
+function stateAt(tl, t) {
+  const tt = tl.total > 0 ? ((t % tl.total) + tl.total) % tl.total : 0;
+  let p = tl.steps.length - 1;
+  for (let i = 0; i < tl.steps.length; i++) {
+    if (tt < tl.steps[i].start + tl.steps[i].duration) { p = i; break; }
+  }
+  const s = tl.steps[p];
+  return { pos: p, index: s.index, elapsed: tt - s.start };
+}
+
+/* weights: 1 = active, 0 = idle */
+function weightsForPos(tl, pos) {
+  const n = cfg.thoughts.length;
+  const w = new Float64Array(n);
+  const len = tl.steps.length;
+  const trail = clamp(cfg.trail.length | 0, 0, 15);
+  const pw = 0.5 + cfg.trail.fade * 2;
+  for (let d = trail; d >= 0; d--) {
+    const st = tl.steps[((pos - d) % len + len) % len];
+    if (!st) continue;
+    const val = d === 0 ? 1 : Math.pow(1 - d / (trail + 1), pw);
+    if (val > w[st.index]) w[st.index] = val;
+  }
+  return w;
+}
+function currentWeights(tl, st) {
+  const cur = weightsForPos(tl, st.pos);
+  const td = cfg.animation.transitionDuration || 0;
+  if (td <= 0) return cur;
+  const e = clamp(st.elapsed / td, 0, 1);
+  if (e >= 1) return cur;
+  const ease = e < 0.5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2;
+  const prev = weightsForPos(tl, (st.pos - 1 + tl.steps.length) % tl.steps.length);
+  const out = new Float64Array(cur.length);
+  for (let i = 0; i < cur.length; i++) out[i] = lerp(prev[i] || 0, cur[i] || 0, ease);
+  return out;
+}
+
+/* ============================================================
+   4. Renderer — one function drives preview, PNG and GIF
+   ============================================================ */
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+function fontString(size, key, bold) {
+  const f = FONTS[key] || FONTS.sans;
+  return (bold ? 800 : f.weight) + " " + size + "px " + f.family;
+}
+function drawFitted(ctx, img, W, H, fit) {
+  const ir = img.width / img.height, cr = W / H;
+  if (fit === "stretch") { ctx.drawImage(img, 0, 0, W, H); return; }
+  let w, h;
+  const cover = fit !== "contain";
+  if ((ir > cr) === cover) { h = H; w = H * ir; } else { w = W; h = W / ir; }
+  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+}
+
+function drawScene(ctx, W, H, weights, activeIndex) {
+  const S = Math.min(W, H);
+  const u = S / 800;
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  /* --- background --- */
+  if (cfg.background.type === "color") {
+    ctx.fillStyle = cfg.background.color; ctx.fillRect(0, 0, W, H);
+  } else if (cfg.background.type === "image") {
+    const img = getImage(cfg.background.image);
+    if (img) drawFitted(ctx, img, W, H, cfg.background.fit);
+    else { ctx.fillStyle = "#0E0B18"; ctx.fillRect(0, 0, W, H); }
+  }
+
+  /* --- title & captions --- */
+  const titleSize = Math.round(28 * u);
+  const capSize = Math.round(17 * u);
+  const pad = 26 * u;
+  let top = pad, bottom = H - pad;
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = cfg.text.color;
+  if (cfg.captions.top) {
+    ctx.font = fontString(capSize, cfg.text.font);
+    ctx.textBaseline = "top";
+    ctx.globalAlpha = 0.72;
+    ctx.fillText(cfg.captions.top, W / 2, top, W - pad * 2);
+    ctx.globalAlpha = 1;
+    top += capSize * 1.6;
+  }
+  if (cfg.title && cfg.showTitle) {
+    ctx.font = fontString(titleSize, cfg.text.font, true);
+    ctx.textBaseline = "top";
+    ctx.fillText(cfg.title, W / 2, top, W - pad * 2);
+    top += titleSize * 1.5;
+  }
+  if (cfg.captions.bottom) {
+    ctx.font = fontString(capSize, cfg.text.font);
+    ctx.textBaseline = "bottom";
+    ctx.globalAlpha = 0.72;
+    ctx.fillText(cfg.captions.bottom, W / 2, bottom, W - pad * 2);
+    ctx.globalAlpha = 1;
+    bottom -= capSize * 1.6;
+  }
+
+  /* --- spinner geometry --- */
+  const cx = W / 2, cy = (top + bottom) / 2;
+  const availX = W / 2 - pad * 0.6;
+  const availY = (bottom - top) / 2 - pad * 0.3;
+  const n = cfg.thoughts.length;
+  if (!n) { ctx.restore(); return; }
+
+  const R = cfg.bars.radius * S;
+  const tSize = cfg.text.size * u;
+  const inside = cfg.text.placement === "inside";
+  /* the line shape only paints a fraction of the bar's thickness */
+  const thickFactor = cfg.bars.shape === "line" ? 0.28 : 1;
+  const dir = cfg.animation.direction === "ccw" ? -1 : 1;
+  const stepAngle = (Math.PI * 2) / n;
+  const angleOf = i => -Math.PI / 2 + dir * i * stepAngle;
+
+  /* measure every label first */
+  const meta = [];
+  let widest = 0, tallest = 0;
+  for (let i = 0; i < n; i++) {
+    const th = cfg.thoughts[i];
+    const strong = th.emphasis === "strong";
+    const a = angleOf(i);
+    const size = tSize * (strong ? 1.14 : 1);
+    let wpx = 0, hpx = size * 1.1;
+    if (th.type === "text") {
+      ctx.font = fontString(size, cfg.text.font, strong);
+      wpx = ctx.measureText(th.content || "").width;
+    } else if (th.type === "icon") {
+      wpx = size * 1.25; hpx = size * 1.25;
+    } else {
+      wpx = size * 2.2; hpx = size * 2.2;
+    }
+    meta.push({ a, ca: Math.cos(a), sa: Math.sin(a), size, wpx, hpx, strong, iscale: 1 });
+    widest = Math.max(widest, wpx);
+    tallest = Math.max(tallest, hpx);
+  }
+
+  const isWedge = cfg.bars.shape === "wedge";
+  let BL = cfg.bars.length * S;
+  let BT = cfg.bars.thickness * S;
+  if (inside && cfg.text.fitBars) {
+    BL = Math.max(BL, widest + tSize * 0.9);
+    /* a wedge takes its width from the spacing between thoughts, not from thickness */
+    if (!isWedge) BT = Math.max(BT, (tallest * 1.35) / thickFactor);
+  }
+  const labelR = R + BL + 18 * u;
+
+  /* auto-fit the whole spinner inside the canvas */
+  const halfT = isWedge ? 0 : (BT * thickFactor * cfg.trail.activeScale) / 2;
+  let maxX = R + BL * 1.08 + halfT, maxY = R + BL * 1.08 + halfT;
+  if (inside) {
+    /* labels shrink to stay within the bar they sit on. A wedge narrows toward
+       the middle, so measure the room at the label's inner end, not its centre. */
+    const roomW = BL - tSize * 0.45;
+    meta.forEach(m => {
+      const roomH = isWedge
+        ? Math.max(6, (R + BL / 2 - Math.min(m.wpx, BL) / 2) * stepAngle * 0.64 * 0.82)
+        : BT * thickFactor * 0.84;
+      m.iscale = clamp(Math.min(1, roomW / Math.max(1, m.wpx), roomH / Math.max(1, m.hpx)), 0.12, 1);
+    });
+  } else {
+    for (let i = 0; i < n; i++) {
+      const m = meta[i];
+      if (cfg.text.angle === "radial") {
+        maxX = Math.max(maxX, Math.abs(m.ca) * (labelR + m.wpx) + m.hpx * 0.6);
+        maxY = Math.max(maxY, Math.abs(m.sa) * (labelR + m.wpx) + m.hpx * 0.6);
+      } else {
+        const anchor = m.ca > 0.25 ? 0 : m.ca < -0.25 ? -1 : -0.5;
+        const x0 = m.ca * labelR + anchor * m.wpx, x1 = x0 + m.wpx;
+        maxX = Math.max(maxX, Math.abs(x0), Math.abs(x1));
+        maxY = Math.max(maxY, Math.abs(m.sa * labelR) + m.hpx * 0.75);
+      }
+    }
+  }
+  const fit = clamp(Math.min(1, availX / Math.max(1, maxX), availY / Math.max(1, maxY)), 0.08, 1);
+
+  ctx.translate(cx, cy);
+  ctx.scale(fit, fit);
+
+  /* --- bars --- */
+  for (let i = 0; i < n; i++) {
+    const w = weights[i] || 0;
+    const m = meta[i];
+    const alpha = cfg.trail.inactiveOpacity + (1 - cfg.trail.inactiveOpacity) * w;
+    const color = mixRgba(cfg.bars.color, cfg.bars.activeColor, w, alpha);
+    const sc = 1 + (cfg.trail.activeScale - 1) * w;
+    const thick = BT * sc * (m.strong ? 1.25 : 1);
+    const len = BL * (1 + (sc - 1) * 0.5);
+
+    ctx.save();
+    ctx.rotate(m.a);
+    ctx.fillStyle = color;
+    if (cfg.trail.glow > 0 && w > 0.02) {
+      ctx.shadowColor = rgba(cfg.bars.activeColor, w);
+      ctx.shadowBlur = cfg.trail.glow * u * w;
+    }
+    const sh = cfg.bars.shape;
+    if (sh === "wedge") {
+      const half = stepAngle * 0.32 * (1 + (sc - 1) * 0.3);
+      ctx.beginPath();
+      ctx.arc(0, 0, R, -half, half);
+      ctx.arc(0, 0, R + len, half, -half, true);
+      ctx.closePath(); ctx.fill();
+    } else if (sh === "rectangle") {
+      ctx.fillRect(R, -thick / 2, len, thick);
+    } else if (sh === "line") {
+      const t2 = Math.max(1.2 * u, thick * 0.28);
+      roundRectPath(ctx, R, -t2 / 2, len, t2, t2 / 2); ctx.fill();
+    } else if (sh === "capsule") {
+      roundRectPath(ctx, R, -thick / 2, len, thick, thick / 2); ctx.fill();
+    } else {
+      roundRectPath(ctx, R, -thick / 2, len, thick, thick * 0.34); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* --- labels --- */
+  for (let i = 0; i < n; i++) {
+    const th = cfg.thoughts[i], m = meta[i], w = weights[i] || 0;
+    const alpha = clamp(cfg.trail.inactiveOpacity + (1 - cfg.trail.inactiveOpacity) * w, 0.08, 1);
+    const size = m.size * m.iscale * (1 + (cfg.trail.activeScale - 1) * w * 0.45);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (inside) {
+      /* sit the label on the bar, reading outward, flipped on the left half */
+      const sc = 1 + (cfg.trail.activeScale - 1) * w;
+      const len = BL * (1 + (sc - 1) * 0.5);
+      ctx.rotate(m.a);
+      ctx.translate(R + len / 2, 0);
+      if (m.ca < -0.01) ctx.rotate(Math.PI);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      drawLabel(ctx, th, 0, 0, size, w, onBarColor(w, alpha));
+      ctx.restore();
+      continue;
+    }
+    if (cfg.trail.glow > 0 && w > 0.5) {
+      ctx.shadowColor = rgba(cfg.bars.activeColor, w * 0.9);
+      ctx.shadowBlur = cfg.trail.glow * u * w * 0.8;
+    }
+    if (cfg.text.angle === "radial") {
+      ctx.rotate(m.a);
+      const flip = m.ca < -0.01;
+      ctx.translate(labelR, 0);
+      if (flip) { ctx.rotate(Math.PI); }
+      ctx.textAlign = flip ? "right" : "left";
+      ctx.textBaseline = "middle";
+      drawLabel(ctx, th, 0, 0, size, w);
+    } else {
+      const x = m.ca * labelR, y = m.sa * labelR;
+      ctx.textAlign = m.ca > 0.25 ? "left" : m.ca < -0.25 ? "right" : "center";
+      ctx.textBaseline = m.sa > 0.5 ? "top" : m.sa < -0.5 ? "bottom" : "middle";
+      drawLabel(ctx, th, x, y, size, w);
+    }
+    ctx.restore();
+  }
+
+  /* --- center --- */
+  const c = cfg.center;
+  if (c.type !== "none") {
+    const cs = (c.scale || 1);
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (c.type === "text" && c.text) {
+      ctx.fillStyle = cfg.bars.activeColor;
+      ctx.font = fontString(Math.round(26 * u * cs), cfg.text.font, true);
+      ctx.fillText(c.text, 0, 0, R * 1.7);
+    } else if (c.type === "icon") {
+      ctx.font = Math.round(46 * u * cs) + "px system-ui,'Apple Color Emoji','Segoe UI Emoji',sans-serif";
+      ctx.fillText(ICONS[c.icon] || ICONS.brain, 0, 0);
+    } else if (c.type === "image") {
+      const img = getImage(c.image);
+      if (img) {
+        const box = R * 1.25 * cs;
+        const ir = img.width / img.height;
+        let w2 = box, h2 = box;
+        if (ir > 1) h2 = box / ir; else w2 = box * ir;
+        ctx.drawImage(img, -w2 / 2, -h2 / 2, w2, h2);
+      }
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* picks a legible colour for a label sitting on top of a bar */
+function onBarColor(w, alpha) {
+  if (cfg.text.onBar === "custom") return cfg.text.onBarColor;
+  const bg = cfg.background.type === "color" ? hexToRgb(cfg.background.color) : [18, 16, 32];
+  const a = hexToRgb(cfg.bars.color), b = hexToRgb(cfg.bars.activeColor);
+  let L = 0;
+  const coef = [0.2126, 0.7152, 0.0722];
+  for (let k = 0; k < 3; k++) {
+    const bar = lerp(a[k], b[k], w);
+    L += coef[k] * lerp(bg[k], bar, alpha);
+  }
+  return L / 255 > 0.55 ? "#0B0A12" : "#FFFFFF";
+}
+
+function drawLabel(ctx, th, x, y, size, w, override) {
+  if (th.type === "text") {
+    ctx.fillStyle = override || (w > 0.55 ? cfg.bars.activeColor : cfg.text.color);
+    ctx.font = fontString(size, cfg.text.font, th.emphasis === "strong");
+    ctx.fillText(th.content || "", x, y);
+  } else if (th.type === "icon") {
+    ctx.font = Math.round(size * 1.25) + "px system-ui,'Apple Color Emoji','Segoe UI Emoji',sans-serif";
+    ctx.fillText(ICONS[th.icon] || ICONS.brain, x, y);
+  } else if (th.type === "image") {
+    const img = getImage(th.image);
+    const box = size * 2.2;
+    if (img) {
+      const ir = img.width / img.height;
+      let w2 = box, h2 = box;
+      if (ir > 1) h2 = box / ir; else w2 = box * ir;
+      let ox = ctx.textAlign === "left" ? 0 : ctx.textAlign === "right" ? -w2 : -w2 / 2;
+      let oy = ctx.textBaseline === "top" ? 0 : ctx.textBaseline === "bottom" ? -h2 : -h2 / 2;
+      ctx.drawImage(img, x + ox, y + oy, w2, h2);
+    } else {
+      ctx.fillStyle = override || cfg.text.color;
+      ctx.font = fontString(size * 0.7, cfg.text.font);
+      ctx.fillText("?", x, y);
+    }
+  }
+}
+
+/* ============================================================
+   5. Live preview loop
+   ============================================================ */
+const canvas = $("#preview");
+const ctx = canvas.getContext("2d");
+
+function outSize() {
+  if (cfg.output.preset === "custom") {
+    return [clamp(cfg.output.width | 0, 120, 1600), clamp(cfg.output.height | 0, 120, 1600)];
+  }
+  return SIZES[cfg.output.preset] || SIZES.square;
+}
+
+function draw() {
+  const [W, H] = outSize();
+  if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+  const tl = buildTimeline();
+  const st = stateAt(tl, ui.time);
+  const w = currentWeights(tl, st);
+  drawScene(ctx, W, H, w, st.index);
+
+  if (st.index !== ui.lastActive) {
+    ui.lastActive = st.index;
+    const th = cfg.thoughts[st.index];
+    $("#nowThought").textContent = th ? (th.label || (th.type === "text" ? (th.content || "—") : th.type === "icon" ? ICONS[th.icon] : "Image " + (st.index + 1))) : "—";
+    highlightRow(st.index);
+  }
+  $("#frameReadout").textContent = "Frame " + (st.pos + 1) + " / " + tl.steps.length;
+}
+
+function tick(now) {
+  if (!ui.last) ui.last = now;
+  const dt = Math.min(120, now - ui.last);
+  ui.last = now;
+  if (ui.playing) { ui.time += dt; draw(); }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+function setPlaying(p) {
+  ui.playing = p;
+  const b = $("#playBtn");
+  b.textContent = p ? "❚❚ Pause" : "▶ Play";
+  b.setAttribute("aria-pressed", String(p));
+  if (!p) draw();
+}
+$("#playBtn").addEventListener("click", () => setPlaying(!ui.playing));
+$("#restartBtn").addEventListener("click", () => { ui.time = 0; ui.lastActive = -1; draw(); });
+
+/* ============================================================
+   6. Thoughts editor
+   ============================================================ */
+const thoughtsEl = $("#thoughts");
+
+function highlightRow(i) {
+  $$(".trow", thoughtsEl).forEach(r => r.classList.toggle("live", Number(r.dataset.i) === i));
+}
+
+function renderThoughts() {
+  const n = cfg.thoughts.length;
+  const dir = cfg.animation.direction === "ccw" ? -1 : 1;
+  thoughtsEl.innerHTML = "";
+  cfg.thoughts.forEach((th, i) => {
+    const row = document.createElement("div");
+    row.className = "trow";
+    row.dataset.i = i;
+    row.draggable = true;
+
+    const angle = dir * (360 / n) * i;
+    row.innerHTML =
+      '<button class="grip" title="Drag to reorder" aria-label="Reorder thought ' + (i + 1) + '" tabindex="-1">☰</button>' +
+      '<span class="spoke" aria-hidden="true"><i style="transform:rotate(' + angle + 'deg)"></i></span>' +
+      '<span class="tnum">' + (i + 1) + '</span>';
+
+    if (th.type === "text") {
+      const inp = document.createElement("input");
+      inp.type = "text"; inp.className = "tinput"; inp.value = th.content;
+      inp.setAttribute("aria-label", "Thought " + (i + 1));
+      inp.placeholder = "What are you thinking?";
+      inp.addEventListener("input", () => { th.content = inp.value; validate(); draw(); });
+      row.appendChild(inp);
+    } else if (th.type === "icon") {
+      const sel = document.createElement("select");
+      sel.className = "tinput";
+      sel.setAttribute("aria-label", "Icon for thought " + (i + 1));
+      Object.keys(ICONS).forEach(k => {
+        const o = document.createElement("option");
+        o.value = k; o.textContent = ICONS[k] + "  " + k;
+        sel.appendChild(o);
+      });
+      sel.value = th.icon;
+      sel.addEventListener("change", () => { th.icon = sel.value; draw(); });
+      row.appendChild(sel);
+    } else {
+      const holder = document.createElement("div");
+      holder.style.cssText = "flex:1 1 auto;display:flex;gap:6px;align-items:center;min-width:0";
+      const btn = document.createElement("button");
+      btn.className = "btn sm"; btn.textContent = th.image ? "Replace" : "Upload";
+      btn.addEventListener("click", () => pickImage(src => { th.image = src; renderThoughts(); validate(); draw(); }));
+      holder.appendChild(btn);
+      if (th.image) {
+        const im = document.createElement("img");
+        im.className = "thumb"; im.src = th.image; im.alt = "";
+        holder.appendChild(im);
+      }
+      row.appendChild(holder);
+    }
+
+    const type = document.createElement("select");
+    type.className = "ttype";
+    type.setAttribute("aria-label", "Type of thought " + (i + 1));
+    [["text", "Text"], ["image", "Image"], ["icon", "Icon"]].forEach(([v, l]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = l; type.appendChild(o);
+    });
+    type.value = th.type;
+    type.addEventListener("change", () => { th.type = type.value; renderThoughts(); validate(); draw(); });
+    row.appendChild(type);
+
+    const more = document.createElement("button");
+    more.className = "iconbtn"; more.textContent = "⋮";
+    more.title = "Thought settings";
+    more.setAttribute("aria-label", "Settings for thought " + (i + 1));
+    more.setAttribute("aria-expanded", String(ui.openDetail === i));
+    more.addEventListener("click", () => { ui.openDetail = ui.openDetail === i ? -1 : i; renderThoughts(); });
+    row.appendChild(more);
+
+    /* drag and drop */
+    row.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", String(i));
+      e.dataTransfer.effectAllowed = "move";
+      row.classList.add("dragging");
+    });
+    row.addEventListener("dragend", () => row.classList.remove("dragging"));
+    row.addEventListener("dragover", e => { e.preventDefault(); row.classList.add("drag-over"); });
+    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+    row.addEventListener("drop", e => {
+      e.preventDefault(); row.classList.remove("drag-over");
+      const from = Number(e.dataTransfer.getData("text/plain"));
+      moveThought(from, i);
+    });
+
+    thoughtsEl.appendChild(row);
+
+    if (ui.openDetail === i) thoughtsEl.appendChild(detailPanel(th, i));
+  });
+
+  $("#thoughtCount").textContent = n + (n === 1 ? " thought" : " thoughts");
+  $("#addThought").disabled = n >= MAX_THOUGHTS;
+  rebuildIndexSelects();
+  highlightRow(ui.lastActive);
+}
+
+function detailPanel(th, i) {
+  const d = document.createElement("div");
+  d.className = "tdetail";
+  d.innerHTML =
+    '<h4>Thought ' + (i + 1) + '</h4>' +
+    '<div class="row2">' +
+      '<div class="field"><label for="d-pause">Pause (ms)</label><input type="number" id="d-pause" min="0" step="100" value="' + (th.pause || 0) + '"></div>' +
+      '<div class="field"><span class="legend">Emphasis</span><div class="pills">' +
+        '<label><input type="radio" name="d-emph" value="normal"' + (th.emphasis !== "strong" ? " checked" : "") + '>Normal</label>' +
+        '<label><input type="radio" name="d-emph" value="strong"' + (th.emphasis === "strong" ? " checked" : "") + '>Strong</label>' +
+      '</div></div>' +
+    '</div>' +
+    '<div class="field"><label for="d-label">Optional label</label><input type="text" id="d-label" value="' + (th.label || "").replace(/"/g, "&quot;") + '" placeholder="Shown in the editor only"></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button class="btn sm" id="d-up">↑ Move up</button>' +
+      '<button class="btn sm" id="d-down">↓ Move down</button>' +
+      '<button class="btn sm" id="d-dup">Duplicate</button>' +
+      '<button class="btn sm ghost" id="d-del" style="color:var(--danger)">Delete thought</button>' +
+    '</div>';
+  $("#d-pause", d).addEventListener("input", e => { th.pause = Math.max(0, Number(e.target.value) || 0); draw(); });
+  $$('input[name="d-emph"]', d).forEach(r => r.addEventListener("change", () => { th.emphasis = r.value; draw(); }));
+  $("#d-label", d).addEventListener("input", e => { th.label = e.target.value; });
+  $("#d-up", d).addEventListener("click", () => moveThought(i, Math.max(0, i - 1)));
+  $("#d-down", d).addEventListener("click", () => moveThought(i, Math.min(cfg.thoughts.length - 1, i + 1)));
+  $("#d-dup", d).addEventListener("click", () => {
+    if (cfg.thoughts.length >= MAX_THOUGHTS) { toast("Maximum is " + MAX_THOUGHTS + " thoughts."); return; }
+    cfg.thoughts.splice(i + 1, 0, JSON.parse(JSON.stringify(th)));
+    ui.openDetail = -1; renderThoughts(); validate(); draw();
+  });
+  $("#d-del", d).addEventListener("click", () => {
+    cfg.thoughts.splice(i, 1);
+    ui.openDetail = -1;
+    clampIndexes(); renderThoughts(); validate(); draw();
+  });
+  return d;
+}
+
+function moveThought(from, to) {
+  if (from === to || from < 0 || to < 0) return;
+  const [it] = cfg.thoughts.splice(from, 1);
+  cfg.thoughts.splice(to, 0, it);
+  ui.openDetail = -1;
+  renderThoughts(); draw();
+}
+function clampIndexes() {
+  const n = Math.max(1, cfg.thoughts.length);
+  cfg.animation.startIndex = clamp(cfg.animation.startIndex | 0, 0, n - 1);
+  cfg.animation.holdIndex = clamp(cfg.animation.holdIndex | 0, 0, n - 1);
+}
+$("#addThought").addEventListener("click", () => {
+  if (cfg.thoughts.length >= MAX_THOUGHTS) { toast("Maximum is " + MAX_THOUGHTS + " thoughts."); return; }
+  cfg.thoughts.push(thought(""));
+  renderThoughts(); validate(); draw();
+  const inputs = $$(".trow input.tinput", thoughtsEl);
+  if (inputs.length) inputs[inputs.length - 1].focus();
+});
+
+function rebuildIndexSelects() {
+  ["#f-start", "#f-holdIndex"].forEach(sel => {
+    const el = $(sel);
+    const key = sel === "#f-start" ? "startIndex" : "holdIndex";
+    const cur = cfg.animation[key];
+    el.innerHTML = "";
+    cfg.thoughts.forEach((t, i) => {
+      const o = document.createElement("option");
+      o.value = String(i);
+      const name = t.type === "text" ? (t.content || "(empty)") : t.type === "icon" ? ICONS[t.icon] : "Image";
+      o.textContent = (i + 1) + " — " + name;
+      el.appendChild(o);
+    });
+    el.value = String(clamp(cur | 0, 0, Math.max(0, cfg.thoughts.length - 1)));
+  });
+}
+
+/* ============================================================
+   7. Generic control binding
+   ============================================================ */
+function bindControls() {
+  $$("[data-bind]").forEach(el => {
+    const path = el.dataset.bind, type = el.dataset.type;
+    const ev = (el.type === "range" || el.type === "text" || el.type === "number" || el.tagName === "TEXTAREA") ? "input" : "change";
+    el.addEventListener(ev, () => {
+      let v;
+      if (el.type === "radio") { if (!el.checked) return; v = el.value; }
+      else if (el.type === "checkbox") v = el.checked;
+      else v = el.value;
+      if (type === "number") v = Math.round(Number(v) || 0);
+      if (type === "float") v = Number(v) || 0;
+      setPath(cfg, path, v);
+      afterChange(path);
+    });
+  });
+}
+function afterChange(path) {
+  if (path === "output.preset") {
+    if (cfg.output.preset !== "custom") {
+      const s = SIZES[cfg.output.preset];
+      cfg.output.width = s[0]; cfg.output.height = s[1];
+      $("#f-w").value = s[0]; $("#f-h").value = s[1];
+    }
+  }
+  if (path === "text.placement" && cfg.text.placement === "inside" && cfg.bars.length < BAR_SIZES.large[0]) {
+    cfg.bars.length = BAR_SIZES.large[0];
+    cfg.bars.thickness = Math.max(cfg.bars.thickness, BAR_SIZES.large[1]);
+    syncFromState();
+  }
+  if (path === "animation.stepDuration") syncSpeedSlider();
+  if (path === "animation.direction") renderThoughts();
+  if (path === "structure") updateStructureHint();
+  syncOutputs();
+  applyConditionals();
+  validate();
+  draw();
+}
+
+function syncFromState() {
+  $$("[data-bind]").forEach(el => {
+    const v = getPath(cfg, el.dataset.bind);
+    if (el.type === "radio") el.checked = String(el.value) === String(v);
+    else if (el.type === "checkbox") el.checked = !!v;
+    else el.value = v == null ? "" : v;
+  });
+  /* basic-mode mirrors */
+  syncSpeedSlider();
+  $$('input[name="loopBasic"]').forEach(r => r.checked = (cfg.animation.loopType === "pause" ? r.value === "pause" : r.value === "continuous"));
+  const tl = String(cfg.trail.length);
+  const nearest = ["0", "2", "3", "5"].reduce((a, b) => Math.abs(+b - +tl) < Math.abs(+a - +tl) ? b : a);
+  $$('input[name="trailBasic"]').forEach(r => r.checked = r.value === nearest);
+  const dist = k => Math.abs(BAR_SIZES[k][0] - cfg.bars.length) / 0.4 + Math.abs(BAR_SIZES[k][1] - cfg.bars.thickness) / 0.25;
+  const nearestBar = Object.keys(BAR_SIZES).reduce((a, b) => dist(b) < dist(a) ? b : a);
+  $$('input[name="barSizeBasic"]').forEach(r => r.checked = r.value === nearestBar);
+  $("#f-sequence").value = (cfg.animation.sequence || []).map(i => i + 1).join(",");
+  $("#centerImgThumb").hidden = !cfg.center.image;
+  if (cfg.center.image) $("#centerImgThumb").src = cfg.center.image;
+  $("#bgImgThumb").hidden = !cfg.background.image;
+  if (cfg.background.image) $("#bgImgThumb").src = cfg.background.image;
+  updateStructureHint();
+  syncOutputs();
+  applyConditionals();
+}
+function syncOutputs() {
+  const pairs = [
+    ["#f-cscale", "#o-cscale", v => v.toFixed(2) + "×"],
+    ["#f-radius", "#o-radius", v => Math.round(v * 100) + "%"],
+    ["#f-barLen", "#o-barLen", v => Math.round(v * 100) + "%"],
+    ["#f-barThick", "#o-barThick", v => (v * 100).toFixed(1) + "%"],
+    ["#f-trailLen", "#o-trailLen", v => String(Math.round(v))],
+    ["#f-trailFade", "#o-trailFade", v => v.toFixed(2)],
+    ["#f-inactive", "#o-inactive", v => v.toFixed(2)],
+    ["#f-activeScale", "#o-activeScale", v => v.toFixed(2) + "×"],
+    ["#f-glow", "#o-glow", v => String(Math.round(v))],
+    ["#f-textSize", "#o-textSize", v => Math.round(v) + "px"]
+  ];
+  pairs.forEach(([i, o, f]) => {
+    const inp = $(i), out = $(o);
+    if (inp && out) out.textContent = f(Number(inp.value));
+  });
+}
+function syncSpeedSlider() {
+  let best = 0, bd = Infinity;
+  SPEEDS.forEach((s, i) => { const d = Math.abs(s - cfg.animation.stepDuration); if (d < bd) { bd = d; best = i; } });
+  $("#f-speed").value = String(best + 1);
+}
+function applyConditionals() {
+  $$("[data-when]").forEach(el => {
+    const [path, vals] = el.dataset.when.split("=");
+    const cur = String(getPath(cfg, path));
+    el.hidden = !vals.split("|").includes(cur);
+  });
+}
+function updateStructureHint() {
+  $("#structureHint").textContent = cfg.structure === "sequential"
+    ? "Thoughts form a process, story, or internal argument."
+    : "Related thoughts without a necessary beginning or ending.";
+}
+
+/* speed slider */
+$("#f-speed").addEventListener("input", e => {
+  cfg.animation.stepDuration = SPEEDS[Number(e.target.value) - 1];
+  $("#f-step").value = cfg.animation.stepDuration;
+  draw();
+});
+/* basic loop + trail mirrors */
+$$('input[name="loopBasic"]').forEach(r => r.addEventListener("change", () => {
+  cfg.animation.loopType = r.value;
+  if (r.value === "pause" && !cfg.animation.loopPause) cfg.animation.loopPause = 600;
+  syncFromState(); draw();
+}));
+$$('input[name="trailBasic"]').forEach(r => r.addEventListener("change", () => {
+  cfg.trail.length = Number(r.value);
+  syncFromState(); draw();
+}));
+$$('input[name="barSizeBasic"]').forEach(r => r.addEventListener("change", () => {
+  const s = BAR_SIZES[r.value];
+  cfg.bars.length = s[0]; cfg.bars.thickness = s[1];
+  syncFromState(); draw();
+}));
+$("#f-sequence").addEventListener("input", e => {
+  cfg.animation.sequence = e.target.value.split(",")
+    .map(s => parseInt(s.trim(), 10) - 1)
+    .filter(v => Number.isFinite(v) && v >= 0 && v < cfg.thoughts.length);
+  validate(); draw();
+});
+
+/* mode toggle */
+function setMode(m) {
+  document.body.classList.toggle("mode-advanced", m === "advanced");
+  document.body.classList.toggle("mode-basic", m !== "advanced");
+  $("#modeBasic").setAttribute("aria-pressed", String(m !== "advanced"));
+  $("#modeAdvanced").setAttribute("aria-pressed", String(m === "advanced"));
+  $$(".basic-only").forEach(el => el.style.display = m === "advanced" ? "none" : "");
+}
+$("#modeBasic").addEventListener("click", () => setMode("basic"));
+$("#modeAdvanced").addEventListener("click", () => setMode("advanced"));
+
+/* ============================================================
+   8. Image uploads
+   ============================================================ */
+function readImage(file, cb) {
+  if (!file) return;
+  if (file.size > 6 * 1024 * 1024) { toast("That image is over 6 MB. Try a smaller one."); return; }
+  const fr = new FileReader();
+  fr.onload = () => cb(fr.result);
+  fr.readAsDataURL(file);
+}
+let pendingPick = null;
+const genericPicker = document.createElement("input");
+genericPicker.type = "file";
+genericPicker.accept = "image/png,image/jpeg,image/webp,image/svg+xml";
+genericPicker.addEventListener("change", () => {
+  readImage(genericPicker.files[0], src => { if (pendingPick) pendingPick(src); });
+  genericPicker.value = "";
+});
+function pickImage(cb) { pendingPick = cb; genericPicker.click(); }
+
+$("#centerImgBtn").addEventListener("click", () => $("#centerImgFile").click());
+$("#centerImgFile").addEventListener("change", e => readImage(e.target.files[0], src => {
+  cfg.center.image = src; syncFromState(); draw();
+}));
+$("#centerImgClear").addEventListener("click", () => { cfg.center.image = null; syncFromState(); draw(); });
+$("#bgImgBtn").addEventListener("click", () => $("#bgImgFile").click());
+$("#bgImgFile").addEventListener("change", e => readImage(e.target.files[0], src => {
+  cfg.background.image = src; syncFromState(); draw();
+}));
+$("#bgImgClear").addEventListener("click", () => { cfg.background.image = null; syncFromState(); draw(); });
+
+/* center icon select */
+(function fillCenterIcons() {
+  const sel = $("#f-cicon");
+  Object.keys(ICONS).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = ICONS[k] + "  " + k;
+    sel.appendChild(o);
+  });
+})();
+
+/* ============================================================
+   9. Validation — warn, never block
+   ============================================================ */
+function validate() {
+  const out = [];
+  const n = cfg.thoughts.length;
+  if (n < MIN_THOUGHTS) out.push({ t: "Thinking Spinners work best with at least " + MIN_THOUGHTS + " thoughts.", k: "warn" });
+  if (n > MAX_THOUGHTS) out.push({ t: "Maximum supported in v1.0 is " + MAX_THOUGHTS + " thoughts.", k: "warn" });
+  cfg.thoughts.forEach((th, i) => {
+    if (th.type === "text") {
+      const words = (th.content || "").trim().split(/\s+/).filter(Boolean).length;
+      if ((th.content || "").length > 22 || words > 5) {
+        out.push({ t: "Thought " + (i + 1) + " may be hard to read in the final GIF. Try 1–5 words.", k: "warn" });
+      }
+    }
+    if (th.type === "image" && !th.image) {
+      out.push({ t: "Thought " + (i + 1) + " references an image that is not available.", k: "warn" });
+    }
+  });
+  if (cfg.background.type === "image" && !cfg.background.image) {
+    out.push({ t: "Background is set to image, but no image is loaded.", k: "warn" });
+  }
+  if (cfg.animation.loopType === "custom" && !cfg.animation.sequence.length) {
+    out.push({ t: "Custom sequence is empty, so thoughts play in list order.", k: "info" });
+  }
+  const el = $("#notes");
+  el.innerHTML = "";
+  out.slice(0, 4).forEach(o => {
+    const d = document.createElement("div");
+    d.className = "note" + (o.k === "info" ? " info" : "");
+    d.textContent = o.t;
+    el.appendChild(d);
+  });
+}
+
+/* ============================================================
+   10. Presets — save, load, copy
+   ============================================================ */
+function exportConfig() {
+  const c = JSON.parse(JSON.stringify(cfg));
+  c.format = "thinking-spinner"; c.version = "1.0";
+  return c;
+}
+function applyConfig(next) {
+  const base = defaultConfig();
+  const merge = (a, b) => {
+    Object.keys(b || {}).forEach(k => {
+      if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") merge(a[k], b[k]);
+      else if (b[k] !== undefined) a[k] = b[k];
+    });
+    return a;
+  };
+  cfg = merge(base, next);
+  cfg.thoughts = (Array.isArray(next.thoughts) ? next.thoughts : base.thoughts).slice(0, MAX_THOUGHTS).map(t => {
+    if (typeof t === "string") return thought(t);
+    return Object.assign(thought(""), t);
+  });
+  if (!cfg.thoughts.length) cfg.thoughts = base.thoughts;
+  if (!Array.isArray(cfg.animation.sequence)) cfg.animation.sequence = [];
+  clampIndexes();
+  ui.time = 0; ui.lastActive = -1; ui.openDetail = -1;
+  imgCache.clear();
+  renderThoughts(); syncFromState(); validate(); draw();
+}
+
+$("#savePresetBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(exportConfig(), null, 2)], { type: "application/json" });
+  download(blob, slug(cfg.name) + ".preset.json");
+  toast("Preset saved");
+});
+$("#copyJsonBtn").addEventListener("click", async () => {
+  const text = JSON.stringify(exportConfig(), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("JSON copied");
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast("JSON copied"); }
+    catch (_) { toast("Copying is blocked here. Use Save preset instead."); }
+    ta.remove();
+  }
+});
+$("#loadPresetBtn").addEventListener("click", () => $("#presetFile").click());
+$("#presetFile").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const data = JSON.parse(fr.result);
+      if (!data || typeof data !== "object" || !Array.isArray(data.thoughts)) throw new Error("bad");
+      applyConfig(data);
+      toast("Preset loaded");
+    } catch (err) {
+      toast("That file isn't a Thinking Spinner preset.");
+    }
+  };
+  fr.readAsText(f);
+  e.target.value = "";
+});
+$("#presetSelect").addEventListener("change", e => {
+  const k = e.target.value;
+  if (!k) return;
+  applyConfig(EXAMPLES[k]());
+  e.target.value = "";
+  toast("Example loaded");
+});
+
+/* ============================================================
+   11. Randomize & reset
+   ============================================================ */
+const PALETTES = [
+  { bg: "#101020", bar: "#3A3560", act: "#8FE3FF", txt: "#E8F4FF" },
+  { bg: "#170F14", bar: "#55303F", act: "#FF7A9A", txt: "#FFE6EC" },
+  { bg: "#0C1613", bar: "#2B4A46", act: "#7BE0C0", txt: "#DFF5EE" },
+  { bg: "#151208", bar: "#4A3F1E", act: "#F5C66B", txt: "#FBF3E2" },
+  { bg: "#F2EFE6", bar: "#C8C0AE", act: "#1B1728", txt: "#2A2536" },
+  { bg: "#1A1030", bar: "#3C2A66", act: "#C9A2FF", txt: "#EFE6FF" },
+  { bg: "#FFFFFF", bar: "#D9D5E4", act: "#4B2FD6", txt: "#221E33" }
+];
+$("#randomizeBtn").addEventListener("click", () => {
+  const p = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+  cfg.background.type = "color";
+  cfg.background.color = p.bg;
+  cfg.bars.color = p.bar;
+  cfg.bars.activeColor = p.act;
+  cfg.text.color = p.txt;
+  cfg.bars.shape = ["rectangle", "rounded", "capsule", "line", "wedge"][Math.floor(Math.random() * 5)];
+  cfg.text.font = ["sans", "serif", "mono", "boldsans"][Math.floor(Math.random() * 4)];
+  syncFromState(); draw();
+  toast("Style randomized — thoughts untouched");
+});
+$("#resetBtn").addEventListener("click", () => {
+  const base = defaultConfig();
+  const changed = JSON.stringify(cfg.thoughts) !== JSON.stringify(base.thoughts) || cfg.title !== base.title;
+  if (changed && !confirm("Reset everything to the default spinner? Your thoughts and settings will be replaced.")) return;
+  applyConfig(defaultConfig());
+  toast("Reset to default");
+});
+
+/* ============================================================
+   12. PNG export — captures the current frame
+   ============================================================ */
+$("#pngBtn").addEventListener("click", () => {
+  canvas.toBlob(b => {
+    if (!b) { toast("PNG export failed."); return; }
+    download(b, slug(cfg.name) + ".png");
+    toast("PNG ready");
+  }, "image/png");
+});
+
+/* ============================================================
+   13. GIF encoder — entirely in the browser, no server
+   ============================================================ */
+class Bytes {
+  constructor(cap) { this.a = new Uint8Array(cap || 1 << 16); this.n = 0; }
+  need(k) {
+    if (this.n + k <= this.a.length) return;
+    let len = this.a.length;
+    while (len < this.n + k) len *= 2;
+    const t = new Uint8Array(len); t.set(this.a.subarray(0, this.n)); this.a = t;
+  }
+  b(v) { this.need(1); this.a[this.n++] = v & 255; }
+  u16(v) { this.b(v); this.b(v >> 8); }
+  str(s) { for (let i = 0; i < s.length; i++) this.b(s.charCodeAt(i)); }
+  arr(x) { this.need(x.length); this.a.set(x, this.n); this.n += x.length; }
+  out() { return this.a.subarray(0, this.n); }
+}
+
+function lzwCompress(pixels, minCodeSize) {
+  const CLEAR = 1 << minCodeSize, EOI = CLEAR + 1;
+  const dict = new Int32Array(4096 * 256).fill(-1);
+  let next = EOI + 1, codeSize = minCodeSize + 1;
+  let cur = 0, curBits = 0;
+  const buf = new Bytes(pixels.length >> 1 || 64);
+  const emit = code => {
+    cur |= code << curBits; curBits += codeSize;
+    while (curBits >= 8) { buf.b(cur & 255); cur >>= 8; curBits -= 8; }
+  };
+  emit(CLEAR);
+  let prefix = pixels[0];
+  for (let i = 1; i < pixels.length; i++) {
+    const c = pixels[i];
+    const key = (prefix << 8) | c;
+    const found = dict[key];
+    if (found !== -1) { prefix = found; continue; }
+    emit(prefix);
+    if (next < 4096) {
+      dict[key] = next++;
+      if (next > (1 << codeSize) && codeSize < 12) codeSize++;
+    } else {
+      emit(CLEAR);
+      dict.fill(-1); next = EOI + 1; codeSize = minCodeSize + 1;
+    }
+    prefix = c;
+  }
+  emit(prefix);
+  emit(EOI);
+  if (curBits > 0) buf.b(cur & 255);
+  return buf.out();
+}
+
+/* median cut over a 15-bit histogram */
+function buildPalette(hist, maxColors) {
+  const entries = [];
+  for (let i = 0; i < 32768; i++) if (hist[i]) entries.push(i);
+  if (!entries.length) return [[0, 0, 0]];
+  let boxes = [makeBox(entries, hist)];
+  while (boxes.length < maxColors) {
+    let bi = -1, best = 0;
+    for (let i = 0; i < boxes.length; i++) {
+      const b = boxes[i];
+      if (b.idx.length < 2) continue;
+      const score = b.range * Math.log(b.count + 1);
+      if (score > best) { best = score; bi = i; }
+    }
+    if (bi < 0) break;
+    const b = boxes[bi];
+    const ch = b.axis;
+    const sorted = b.idx.slice().sort((x, y) => chanOf(x, ch) - chanOf(y, ch));
+    let half = b.count / 2, acc = 0, cut = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      acc += hist[sorted[i]];
+      if (acc >= half) { cut = Math.max(1, Math.min(i + 1, sorted.length - 1)); break; }
+    }
+    const A = makeBox(sorted.slice(0, cut), hist), B = makeBox(sorted.slice(cut), hist);
+    boxes.splice(bi, 1, A, B);
+  }
+  return boxes.map(b => b.color);
+}
+function chanOf(i, ch) { return ch === 0 ? (i >> 10) & 31 : ch === 1 ? (i >> 5) & 31 : i & 31; }
+function makeBox(idx, hist) {
+  let rmin = 99, rmax = -1, gmin = 99, gmax = -1, bmin = 99, bmax = -1;
+  let count = 0, sr = 0, sg = 0, sb = 0;
+  for (const i of idx) {
+    const r = (i >> 10) & 31, g = (i >> 5) & 31, b = i & 31, c = hist[i];
+    if (r < rmin) rmin = r; if (r > rmax) rmax = r;
+    if (g < gmin) gmin = g; if (g > gmax) gmax = g;
+    if (b < bmin) bmin = b; if (b > bmax) bmax = b;
+    count += c; sr += r * c; sg += g * c; sb += b * c;
+  }
+  const dr = rmax - rmin, dg = gmax - gmin, db = bmax - bmin;
+  const range = Math.max(dr, dg, db);
+  const axis = range === dr ? 0 : range === dg ? 1 : 2;
+  const exp = v => { const x = Math.round(v); return (x << 3) | (x >> 2); };
+  return {
+    idx, count, range, axis,
+    color: count ? [exp(sr / count), exp(sg / count), exp(sb / count)] : [0, 0, 0]
+  };
+}
+
+/* `source` = { count, frame(i) -> {data, delay} }.
+   Frames are pulled twice — once to learn the colours, once to encode — so a
+   long animation never has to sit in memory all at once. */
+async function encodeGIF(source, W, H, opts, onProgress) {
+  const transparent = !!opts.transparent;
+  const maxColors = transparent ? 255 : 256;
+
+  /* 1. histogram */
+  const hist = new Uint32Array(32768);
+  for (let fi = 0; fi < source.count; fi++) {
+    const d = source.frame(fi).data;
+    for (let i = 0; i < d.length; i += 16) { /* sample every 4th pixel */
+      if (d[i + 3] < 128) continue;
+      hist[((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3)]++;
+    }
+    if (onProgress) onProgress((fi + 1) / source.count, "measure");
+    if ((fi & 3) === 3) await new Promise(r => setTimeout(r, 0));
+  }
+  let palette = buildPalette(hist, maxColors);
+  if (!palette.length) palette = [[0, 0, 0]];
+  const transIndex = transparent ? palette.length : -1;
+  const total = palette.length + (transparent ? 1 : 0);
+  let sizeBits = 1;
+  while ((1 << sizeBits) < Math.max(2, total)) sizeBits++;
+  sizeBits = Math.min(8, sizeBits);
+  const tableSize = 1 << sizeBits;
+
+  /* 2. nearest-colour cache */
+  const cache = new Int16Array(32768).fill(-1);
+  const nearest = key => {
+    let c = cache[key];
+    if (c !== -1) return c;
+    const r = (((key >> 10) & 31) << 3) | (((key >> 10) & 31) >> 2);
+    const g = (((key >> 5) & 31) << 3) | (((key >> 5) & 31) >> 2);
+    const b = ((key & 31) << 3) | ((key & 31) >> 2);
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const dr = r - p[0], dg = g - p[1], db = b - p[2];
+      const d = dr * dr + dg * dg + db * db;
+      if (d < bd) { bd = d; bi = i; }
+    }
+    cache[key] = bi;
+    return bi;
+  };
+
+  /* 3. assemble */
+  const out = new Bytes(1 << 20);
+  out.str("GIF89a");
+  out.u16(W); out.u16(H);
+  out.b(0x80 | 0x70 | (sizeBits - 1));
+  out.b(0); out.b(0);
+  for (let i = 0; i < tableSize; i++) {
+    const p = palette[i] || [0, 0, 0];
+    out.b(p[0]); out.b(p[1]); out.b(p[2]);
+  }
+  /* looping */
+  out.b(0x21); out.b(0xFF); out.b(0x0B);
+  out.str("NETSCAPE2.0");
+  out.b(0x03); out.b(0x01); out.u16(opts.loopCount | 0); out.b(0x00);
+
+  const minCodeSize = Math.max(2, sizeBits);
+  const px = new Uint8Array(W * H);
+
+  for (let fi = 0; fi < source.count; fi++) {
+    const f = source.frame(fi), d = f.data;
+    for (let i = 0, p = 0; p < px.length; p++, i += 4) {
+      if (transparent && d[i + 3] < 128) { px[p] = transIndex; continue; }
+      px[p] = nearest(((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3));
+    }
+    out.b(0x21); out.b(0xF9); out.b(0x04);
+    out.b(((transparent ? 2 : 1) << 2) | (transparent ? 1 : 0));
+    out.u16(Math.max(2, Math.round(f.delay / 10)));
+    out.b(transparent ? transIndex : 0);
+    out.b(0x00);
+
+    out.b(0x2C); out.u16(0); out.u16(0); out.u16(W); out.u16(H); out.b(0x00);
+    out.b(minCodeSize);
+    const data = lzwCompress(px, minCodeSize);
+    for (let i = 0; i < data.length; i += 255) {
+      const len = Math.min(255, data.length - i);
+      out.b(len);
+      out.arr(data.subarray(i, i + len));
+    }
+    out.b(0x00);
+
+    if (onProgress) onProgress((fi + 1) / source.count, "encode");
+    await new Promise(r => setTimeout(r, 0));
+  }
+  out.b(0x3B);
+  return new Blob([out.out()], { type: "image/gif" });
+}
+
+/* ============================================================
+   14. GIF export flow
+   ============================================================ */
+function showProgress(on, title, note) {
+  $("#progress").hidden = !on;
+  if (title) $("#progTitle").textContent = title;
+  if (note) $("#progNote").textContent = note;
+  if (on) { $("#progBar").style.width = "0%"; $("#progPct").textContent = "0%"; }
+}
+function setProgress(p) {
+  const v = Math.round(clamp(p, 0, 1) * 100);
+  $("#progBar").style.width = v + "%";
+  $("#progPct").textContent = v + "%";
+}
+
+$("#gifBtn").addEventListener("click", async () => {
+  const btn = $("#gifBtn");
+  btn.disabled = true;
+  const wasPlaying = ui.playing;
+  setPlaying(false);
+  showProgress(true, "Rendering GIF", "Drawing frames…");
+  await new Promise(r => setTimeout(r, 30));
+
+  try {
+    const [W, H] = outSize();
+    const tl = buildTimeline();
+    const off = document.createElement("canvas");
+    off.width = W; off.height = H;
+    const octx = off.getContext("2d", { willReadFrequently: true });
+
+    /* frames are drawn on demand, not stored — a long spinner at 1000×800
+       would otherwise hold hundreds of megabytes of pixels at once */
+    const fps = cfg.output.fps | 0;
+    let source;
+    if (fps <= 0) {
+      source = {
+        count: tl.steps.length,
+        frame(i) {
+          const s = tl.steps[i];
+          drawScene(octx, W, H, weightsForPos(tl, i), s.index);
+          return { data: octx.getImageData(0, 0, W, H).data, delay: s.duration };
+        }
+      };
+    } else {
+      const count = clamp(Math.round(tl.total / 1000 * fps), 2, 120);
+      const dt = tl.total / count;
+      source = {
+        count,
+        frame(i) {
+          const st = stateAt(tl, i * dt);
+          drawScene(octx, W, H, currentWeights(tl, st), st.index);
+          return { data: octx.getImageData(0, 0, W, H).data, delay: dt };
+        }
+      };
+    }
+
+    const blob = await encodeGIF(source, W, H, {
+      transparent: cfg.background.type === "transparent",
+      loopCount: cfg.output.loopCount | 0
+    }, (p, phase) => {
+      if (phase === "measure") {
+        $("#progNote").textContent = "Reading colours…";
+        setProgress(p * 0.25);
+      } else {
+        $("#progNote").textContent = "Encoding frames…";
+        setProgress(0.25 + p * 0.75);
+      }
+    });
+
+    showProgress(true, "GIF ready", "Saving to your downloads…");
+    setProgress(1);
+    download(blob, slug(cfg.name) + ".gif");
+    await new Promise(r => setTimeout(r, 500));
+    toast("GIF ready — " + Math.round(blob.size / 1024) + " KB");
+  } catch (err) {
+    console.error(err);
+    toast("GIF export failed. Try a smaller size or fewer frames.");
+  } finally {
+    showProgress(false);
+    btn.disabled = false;
+    setPlaying(wasPlaying);
+  }
+});
+
+/* ============================================================
+   15. Boot
+   ============================================================ */
+(function boot() {
+  /* wordmark spinner: 8 bars, staggered */
+  const mark = $("#mark");
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement("i");
+    b.style.transform = "rotate(" + (i * 45) + "deg)";
+    b.style.animationDelay = (i * 0.2) + "s";
+    mark.appendChild(b);
+  }
+  bindControls();
+  renderThoughts();
+  syncFromState();
+  setMode("basic");
+  validate();
+  draw();
+  if (ui.reduced) {
+    setPlaying(false);
+    const d = document.createElement("div");
+    d.className = "note info";
+    d.textContent = "Your system asks for reduced motion, so the preview starts paused. Exported GIFs still animate.";
+    $("#notes").prepend(d);
+  }
+  /* keyboard: space toggles playback when not typing */
+  document.addEventListener("keydown", e => {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+    if (e.code === "Space") { e.preventDefault(); setPlaying(!ui.playing); }
+  });
+})();
+</script>
+</body>
+</html>
