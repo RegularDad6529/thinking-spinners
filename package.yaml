@@ -1,0 +1,13 @@
+name: thinking-spinner-generator
+title: Thinking Spinner Generator
+version: 1.0.0
+description: Single-file HTML app for creating animated thinking-spinner GIFs and PNGs in the browser.
+author: RegularDad6529
+license: MIT
+keywords:
+  - thinking-spinner
+  - gif-generator
+  - animated-gif
+  - canvas
+  - browser-based
+  - zero-dependency
