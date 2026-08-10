@@ -1,0 +1,113 @@
+<!--
+  Title: Self Doubt
+  Artist: @RegularDad
+  Wave Drop: https://6529.io/waves/2e156526-042d-4b6c-9691-17c0cdd0bb9d?serialNo=1285234
+  Approved: 2026-08-01
+  Duration: 34
+  License: CC0
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #141020;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  .stage {
+    position: relative;
+    width: min(90vw, 800px);
+    height: min(90vw, 800px);
+  }
+  .bar {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-origin: 0 0;
+    height: 8%;
+    width: 38%;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #EDE9F5;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .bar.inactive {
+    opacity: 0.25;
+    background: #565270;
+  }
+  .bar.active {
+    opacity: 1;
+    background: #FFFFFF;
+    color: #141020;
+    transform: scaleX(1.15);
+  }
+  .title {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    color: #EDE9F5;
+    letter-spacing: 1px;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="title">SELF DOUBT</div>
+</div>
+<script>
+(function() {
+  const thoughts = [
+    "Am I sure?", "What if I'm wrong?", "Maybe not", "Second guess",
+    "Wait", "But what if?", "Actually no", "Hmm"
+  ];
+  const stage = document.getElementById('stage');
+  const bars = [];
+  const N = thoughts.length;
+  const stepDuration = 400;
+  let active = 0;
+
+  thoughts.forEach((text, i) => {
+    const angle = (i / N) * 360;
+    const bar = document.createElement('div');
+    bar.className = 'bar inactive';
+    bar.style.transform = `rotate(${angle}deg)`;
+    bar.textContent = text;
+    stage.appendChild(bar);
+    bars.push(bar);
+  });
+
+  function tick() {
+    bars.forEach((b, i) => {
+      if (i === active) {
+        b.classList.remove('inactive');
+        b.classList.add('active');
+      } else {
+        b.classList.add('inactive');
+        b.classList.remove('active');
+      }
+    });
+    active = (active + 1) % N;
+  }
+
+  tick();
+  setInterval(tick, stepDuration);
+})();
+</script>
+</body>
+</html>
