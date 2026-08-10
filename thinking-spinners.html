@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thinking Spinners</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .spinner-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+  }
+
+  .spinner-container {
+    position: relative;
+    width: min(90vw, 900px);
+    height: min(90vh, 900px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .player-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+    display: none;
+  }
+
+  .player-frame.active {
+    opacity: 1;
+    display: block;
+  }
+
+  .spinner-gif {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+    display: none;
+  }
+
+  .spinner-gif.active {
+    opacity: 1;
+    display: block;
+  }
+
+  .caption-area {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    text-align: center;
+    min-height: 24px;
+  }
+
+  .caption {
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .caption a {
+    color: #7799cc;
+    text-decoration: none;
+    font-weight: 400;
+  }
+
+  .caption a:hover {
+    text-decoration: underline;
+  }
+
+  .fade-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    opacity: 0;
+    transition: opacity 0.4s ease-out;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .fade-overlay.show {
+    opacity: 1;
+  }
+
+  .loading {
+    color: #555;
+    font-size: 14px;
+    text-align: center;
+    padding: 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="spinner-stage">
+  <div class="spinner-container">
+    <div class="fade-overlay" id="fade"></div>
+    <iframe class="player-frame" id="playerFrame" sandbox="allow-scripts"></iframe>
+    <img class="spinner-gif" id="spinner" alt="">
+  </div>
+  <div class="caption-area">
+    <div class="caption" id="caption"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const REPO_OWNER = "RegularDad6529";
+const REPO_NAME = "thinking-spinners";
+const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/players`;
+const GITHUB_RAW = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/players`;
+
+// Fallback GIF spinners (used when no HTML players are in the repo yet)
+const FALLBACK_SPINNERS = [
+  {
+    type: "gif",
+    url: "https://d3lqz0a4bldqgf.cloudfront.net/drops/author_0f8321c5-87b4-11ee-9d82-029a0e4b6159/bf011d6b-988f-4dac-8b08-ae0bf4ebf394/default-thinking-1.gif",
+    title: "Self Doubt",
+    author: "@RegularDad",
+    profileUrl: "https://6529.io/RegularDad",
+    duration: 34000
+  }
+];
+
+// ============================================================
+// ENGINE
+// ============================================================
+(function() {
+  const playerFrame = document.getElementById('playerFrame');
+  const spinnerImg = document.getElementById('spinner');
+  const captionEl = document.getElementById('caption');
+  const fade = document.getElementById('fade');
+  const container = document.querySelector('.spinner-container');
+
+  let spinners = [];
+  let currentIndex = 0;
+  let playOrder = [];
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function renderCaption(s) {
+    if (s.author) {
+      captionEl.innerHTML = `${s.title} — <a href="${s.profileUrl}" target="_blank" rel="noopener">${s.author}</a>`;
+    } else {
+      captionEl.textContent = s.title;
+    }
+  }
+
+  function showSpinner(index) {
+    const s = spinners[index];
+    currentIndex = index;
+
+    fade.classList.add('show');
+
+    setTimeout(() => {
+      // Hide both
+      playerFrame.classList.remove('active');
+      spinnerImg.classList.remove('active');
+      playerFrame.style.display = 'none';
+      spinnerImg.style.display = 'none';
+
+      if (s.type === 'html') {
+        // Load HTML player into iframe
+        playerFrame.srcdoc = s.html;
+        playerFrame.style.display = 'block';
+        requestAnimationFrame(() => playerFrame.classList.add('active'));
+      } else {
+        // Load GIF
+        spinnerImg.src = s.url;
+        spinnerImg.alt = s.title;
+        spinnerImg.style.display = 'block';
+        requestAnimationFrame(() => spinnerImg.classList.add('active'));
+      }
+
+      renderCaption(s);
+      fade.classList.remove('show');
+    }, 400);
+  }
+
+  function advance() {
+    const pos = playOrder.indexOf(currentIndex);
+    const nextPos = (pos + 1) % playOrder.length;
+    showSpinner(playOrder[nextPos]);
+  }
+
+  function start() {
+    if (spinners.length === 0) {
+      container.innerHTML = '<div class="loading">No spinners found.</div>';
+      return;
+    }
+
+    // Build shuffled play order
+    currentIndex = Math.floor(Math.random() * spinners.length);
+    const rest = shuffle(spinners.filter((_, i) => i !== currentIndex));
+    playOrder = [currentIndex, ...rest.map((s) => spinners.indexOf(s))];
+
+    // Show first spinner
+    showSpinner(currentIndex);
+
+    // Schedule rotations
+    function scheduleNext() {
+      const current = spinners[currentIndex];
+      const dur = current.duration || 30000;
+      setTimeout(() => {
+        advance();
+        scheduleNext();
+      }, dur);
+    }
+    scheduleNext();
+  }
+
+  // ============================================================
+  // FETCH PLAYERS FROM GITHUB
+  // ============================================================
+  async function fetchPlayers() {
+    try {
+      const resp = await fetch(GITHUB_API, {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      });
+      if (!resp.ok) throw new Error(`GitHub API: ${resp.status}`);
+      const files = await resp.json();
+
+      // Filter for .html files only
+      const htmlFiles = files.filter(f => f.name.endsWith('.html'));
+
+      if (htmlFiles.length === 0) {
+        // No HTML players yet — use fallback GIFs
+        spinners = FALLBACK_SPINNERS;
+        start();
+        return;
+      }
+
+      // Fetch each player's HTML content
+      const players = await Promise.all(htmlFiles.map(async (f) => {
+        const rawUrl = `${GITHUB_RAW}/${f.name}`;
+        const htmlResp = await fetch(rawUrl);
+        const html = await htmlResp.text();
+
+        // Parse metadata from HTML comment
+        let title = f.name.replace('.html', '');
+        let author = '';
+        let profileUrl = '';
+        let duration = 30000;
+
+        const metaMatch = html.match(/<!--\s*([\s\S]*?)-->/);
+        if (metaMatch) {
+          const meta = metaMatch[1];
+          const titleM = meta.match(/Title:\s*(.+)/i);
+          const authorM = meta.match(/Artist:\s*(.+)/i);
+          const durM = meta.match(/Duration:\s*(\d+)/i);
+          if (titleM) title = titleM[1].trim();
+          if (authorM) author = authorM[1].trim();
+          if (durM) duration = parseInt(durM[1]) * 1000;
+        }
+
+        // Extract profile URL from author handle
+        if (author.startsWith('@')) {
+          profileUrl = `https://6529.io/${author.slice(1)}`;
+        }
+
+        return {
+          type: 'html',
+          html: html,
+          title: title,
+          author: author,
+          profileUrl: profileUrl,
+          duration: duration
+        };
+      }));
+
+      spinners = players;
+      start();
+    } catch (err) {
+      console.error('Failed to fetch players from GitHub:', err);
+      // Fall back to GIF gallery
+      spinners = FALLBACK_SPINNERS;
+      start();
+    }
+  }
+
+  // Start when page loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchPlayers);
+  } else {
+    fetchPlayers();
+  }
+})();
+</script>
+
+</body>
+</html>
