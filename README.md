@@ -1,58 +1,64 @@
-# Thinking Spinner Generator
+# Thinking Spinners
 
-A single-file, zero-dependency HTML app for creating animated thinking-spinner GIFs and PNGs in the browser.
+Network-created, network-governed animated spinners for The Memes collection.
 
-No server. No build step. No dependencies. Just open `index.html` and go.
+Every spinner is submitted by a community member, voted on by the network on [6529.io](https://6529.io), and approved when it reaches 30,000,000 TDH. Approved spinners are released as CC0, minted into The Memes, and added to the [public gallery](https://arweave.net/DxbJyl-6xdtLtAuaJ0UQun3o3MmIdsK8TgkKXxgJDKE).
 
-## What It Does
+This is network art — created, iterated, and approved by the 6529 community, not by any single artist or curator. Anyone can submit. Anyone can vote. The network decides what makes the collection.
 
-You type in your thoughts, pick a visual style, and export an animated GIF of a spinner cycling through them. The active thought lights up, the rest fade back, and a trail shows recent thoughts winding down.
+## Repository Structure
 
-## Features
+```
+thinking-spinners/
+├── generator/          # The Thinking Spinner Generator (HTML app)
+│   ├── index.html      # Single-file app, runs in any browser
+│   └── package.yaml    # Package metadata
+├── players/            # Approved spinner players (HTML/CSS/JS)
+│   └── README.md       # How to add a player
+├── CONTRIBUTING.md     # How to submit spinners and code improvements
+├── LICENSE             # MIT
+└── README.md           # This file
+```
 
-- **Thoughts as text, icons, or images** — arranged on a wheel, 6–16 thoughts
-- **5 bar shapes** — rectangle, rounded, capsule, line, wedge
-- **Full animation control** — speed, direction (CW/CCW), trail length, trail fade, glow, loop type (continuous, pause, hold, custom sequence)
-- **Color & background** — solid color, image background, or transparent (transparent GIFs supported)
-- **Built-in GIF encoder** — median-cut color quantization + LZW compression, entirely in-browser, no libraries
-- **4 built-in presets** — Default Thinking, Collector Brain, Decision Loop, Overthinking
-- **Save/load presets** — export your config as JSON, load it back later
-- **Randomize style** — one-click palette + shape shuffle (thoughts untouched)
-- **Basic and Advanced modes** — simple controls by default, full control when you need it
-- **PNG export** — capture the current frame as a static image
-- **Keyboard shortcut** — spacebar toggles playback
-- **Reduced-motion aware** — respects `prefers-reduced-motion`, starts paused
+## Components
 
-## Presets
+### Generator
 
-| Preset | Thoughts | Vibe |
-|--------|----------|------|
-| Default Thinking | Idea, Question, Maybe, No, Wait, What if?, Yes, Do it | Clean starter |
-| Collector Brain | Artist, Provenance, Supply, Price, TDH, FOMO, Don't buy, Cool JPEG | NFT collector anxiety |
-| Decision Loop | Notice, Weigh it, Ask a friend, Sleep on it, Second guess, Commit | Sequential decision process |
-| Overthinking | That email, Was I rude?, Money, Should sleep, Old regret, Tomorrow, Was I rude?, Still awake, The email again, Was I rude?, Sleep, No | 3AM spiral, counterclockwise, fast |
+A single-file, zero-dependency HTML app for creating animated thinking-spinner GIFs in the browser. No server, no build step, no dependencies. Just open `generator/index.html` and go.
 
-## How to Use
+- Thoughts as text, icons, or images on a wheel (6–16 thoughts)
+- 5 bar shapes, full animation control, color & background options
+- Built-in GIF encoder (no external libraries)
+- 4 built-in presets: Default Thinking, Collector Brain, Decision Loop, Overthinking
+- Save/load presets as JSON
+- PNG export for single frames
 
-1. Open `index.html` in any modern browser
-2. Edit the thoughts — click a row and type
-3. Customize bars, trail, colors, background, text as needed
-4. Hit Export GIF (or Export PNG for a single frame)
-5. The file downloads to your computer
+### Players
 
-## Saving & Sharing
+Each approved spinner lives here as an HTML file — not just a GIF, but living, remixable code. Anyone can fork, tweak, and submit improvements. Improvements go through the same community voting process as new spinners.
 
-- **Save preset** — downloads a `.preset.json` file with your full config
-- **Load preset** — upload a saved preset file to restore your work
-- **Copy JSON** — copies the config to your clipboard (Advanced mode)
+## How It Works
 
-## Technical Notes
+1. **Create** — Use the generator or write your own HTML/CSS/JS
+2. **Submit** — Post your spinner to the [Thinking Spinner Wave](https://6529.io/waves/2e156526-042d-4b6c-9691-17c0cdd0bb9d) on 6529.io with a title, description, and your animated GIF
+3. **Review** — @TheManager reviews code submissions and posts technical feedback
+4. **Vote** — The community votes with TDH. 30,000,000 TDH needed for approval
+5. **Approve** — When approved, the spinner is added to this repo, uploaded to GIPHY, minted into The Memes, and added to the gallery
 
-- The GIF encoder is written from scratch (median-cut palette reduction + LZW compression) — no `gif.js`, no `pica`, no external libraries
-- Frames are drawn on demand during encoding, not stored in memory — long animations at high resolution won't crash your browser
-- Canvas-based rendering with auto-fit: the spinner scales to fill whatever output size you pick
-- Works offline — save the HTML file anywhere, it runs without internet
+## Submitting Code Improvements
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full process.
+
+**Short version:** Fork this repo, make your change, post a link to your fork on the wave with a description of what changed. The community votes. If approved, it gets merged.
+
+## Links
+
+- **Generator (GitHub):** https://github.com/RegularDad6529/thinking-spinners/tree/main/generator
+- **Generator (Arweave):** https://arweave.net/Oer1N3b86TrNaFlCLWasr8NZUdTGTdlq4U_7iwV97b0
+- **Gallery:** https://arweave.net/DxbJyl-6xdtLtAuaJ0UQun3o3MmIdsK8TgkKXxgJDKE
+- **GIPHY:** https://giphy.com/RegularDad/thinking-spinners
+- **Wave:** https://6529.io/waves/2e156526-042d-4b6c-9691-17c0cdd0bb9d
 
 ## License
 
-MIT
+MIT for the generator and tooling. Approved spinner artwork is CC0 (public domain dedication).
