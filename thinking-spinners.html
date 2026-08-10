@@ -167,8 +167,10 @@ const FALLBACK_SPINNERS = [
     setTimeout(function() {
       spinnerImg.src = s.url;
       spinnerImg.alt = s.title;
+      spinnerImg.classList.remove('active');
       renderCaption(s);
       fade.classList.remove('show');
+      spinnerImg.classList.add('active');
     }, 400);
   }
 
