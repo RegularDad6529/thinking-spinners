@@ -15,7 +15,7 @@
   "thoughts": [
     {
       "type": "text",
-      "content": "Should I flip now or hold for reveal?",
+      "content": "Flip or hold?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -24,7 +24,7 @@
     },
     {
       "type": "text",
-      "content": "What if the unrevealed token is a 1-of-1?",
+      "content": "1-of-1?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -33,7 +33,7 @@
     },
     {
       "type": "text",
-      "content": "The art is actually fire...",
+      "content": "Fire art though",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -42,7 +42,7 @@
     },
     {
       "type": "text",
-      "content": "But what if I get a common?",
+      "content": "Common?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -51,7 +51,7 @@
     },
     {
       "type": "text",
-      "content": "Floor is rising, should I take profit?",
+      "content": "Take profit?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -60,7 +60,7 @@
     },
     {
       "type": "text",
-      "content": "Or wait for rarity reveal to dump?",
+      "content": "Wait for reveal?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -69,7 +69,7 @@
     },
     {
       "type": "text",
-      "content": "What if everyone reveals and floor craters?",
+      "content": "Floor craters?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -78,7 +78,7 @@
     },
     {
       "type": "text",
-      "content": "Maybe I should mint one more...",
+      "content": "One more mint",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -87,7 +87,7 @@
     },
     {
       "type": "text",
-      "content": "The art is really growing on me though",
+      "content": "Growing on me",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -96,7 +96,7 @@
     },
     {
       "type": "text",
-      "content": "Am I collecting for the art or the flip?",
+      "content": "Art or flip?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -105,7 +105,7 @@
     },
     {
       "type": "text",
-      "content": "Okay maybe a little bit for the flip",
+      "content": "Little bit flip",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -114,7 +114,7 @@
     },
     {
       "type": "text",
-      "content": "But mostly the art... right?",
+      "content": "Mostly art... right?",
       "image": null,
       "icon": "brain",
       "pause": 0,
@@ -157,7 +157,7 @@
   "text": {
     "color": "#e7e3ce",
     "font": "sans",
-    "size": 40,
+    "size": 48,
     "angle": "upright",
     "placement": "inside",
     "fitBars": true,
