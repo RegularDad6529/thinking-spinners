@@ -79,8 +79,10 @@ def render_gif(preset: dict, output_path: str, fps: int = None, width: int = Non
     if fps is not None:
         preset.setdefault("output", {})["fps"] = fps
     if width is not None:
-        preset.setdefault("output", {})["width"] = width
-        preset.setdefault("output", {})["height"] = width
+        preset.setdefault("output", {})[ "width"] = width
+        preset.setdefault("output", {})[ "height"] = width
+        # Clear named preset so outSize() uses explicit width/height instead of SIZES lookup
+        preset.setdefault("output", {})[ "preset"] = "custom"
 
     is_builtin = "_builtin" in preset
     builtin_name = preset.pop("_builtin", None)
