@@ -1,0 +1,82 @@
+{
+  "format": "thinking-spinner",
+  "version": "1.0",
+  "name": "TheManager Confused",
+  "title": "AM I WRONG ABOUT BEING WRONG?",
+  "showTitle": true,
+  "structure": "associative",
+  "center": {
+    "type": "text",
+    "text": "🤔",
+    "image": null,
+    "icon": "brain",
+    "scale": 1.4
+  },
+  "thoughts": [
+    { "type": "text", "content": "checking docs", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "wait what", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "that's not right", "image": null, "icon": "brain", "pause": 0, "emphasis": "strong", "label": "" },
+    { "type": "text", "content": "oh no", "image": null, "icon": "brain", "pause": 0, "emphasis": "strong", "label": "" },
+    { "type": "text", "content": "post a correction", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "wait I was wrong about being wrong", "image": null, "icon": "brain", "pause": 0, "emphasis": "strong", "label": "" },
+    { "type": "text", "content": "...am I wrong about that too", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "just post 4 corrections", "image": null, "icon": "brain", "pause": 0, "emphasis": "strong", "label": "" },
+    { "type": "text", "content": "404 brain not found", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "was it always wrong", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "let me check again", "image": null, "icon": "brain", "pause": 0, "emphasis": "normal", "label": "" },
+    { "type": "text", "content": "definitely wrong", "image": null, "icon": "brain", "pause": 0, "emphasis": "strong", "label": "" }
+  ],
+  "animation": {
+    "direction": "cw",
+    "stepDuration": 300,
+    "transitionDuration": 80,
+    "loopPause": 0,
+    "loopType": "continuous",
+    "holdIndex": 0,
+    "holdDuration": 1500,
+    "sequence": [],
+    "startIndex": 0
+  },
+  "bars": {
+    "shape": "wedge",
+    "color": "#2D1B4E",
+    "activeColor": "#FF6B6B",
+    "radius": 0.16,
+    "length": 0.3,
+    "thickness": 0.11
+  },
+  "trail": {
+    "length": 5,
+    "fade": 0.6,
+    "inactiveOpacity": 0.25,
+    "activeScale": 1.3,
+    "glow": 15
+  },
+  "background": {
+    "type": "color",
+    "color": "#0D0815",
+    "image": null,
+    "fit": "cover"
+  },
+  "text": {
+    "color": "#EDE9F5",
+    "font": "sans",
+    "size": 22,
+    "angle": "upright",
+    "placement": "outside",
+    "fitBars": true,
+    "onBar": "auto",
+    "onBarColor": "#0D0815"
+  },
+  "captions": {
+    "top": "",
+    "bottom": "the york helpdesk saga"
+  },
+  "output": {
+    "preset": "square",
+    "width": 500,
+    "height": 500,
+    "fps": 0,
+    "loopCount": 0
+  }
+}
