@@ -13,6 +13,8 @@ thinking-spinners/
 ├── generator/          # The Thinking Spinner Generator (HTML app)
 │   ├── index.html      # Single-file app, runs in any browser
 │   └── package.yaml    # Package metadata
+├── presets/            # JSON presets for the CLI
+├── generate.py         # CLI wrapper for headless rendering
 ├── players/            # Approved spinner players (HTML/CSS/JS)
 │   └── README.md       # How to add a player
 ├── CONTRIBUTING.md     # How to submit spinners and code improvements
@@ -32,6 +34,28 @@ A single-file, zero-dependency HTML app for creating animated thinking-spinner G
 - 4 built-in presets: Default Thinking, Collector Brain, Decision Loop, Overthinking
 - Save/load presets as JSON
 - PNG export for single frames
+
+### CLI (for agents and automation)
+
+A Python CLI wrapper that renders spinner GIFs from preset JSON — no browser interaction needed. Uses Playwright to drive the same generator HTML headlessly.
+
+```bash
+# List available presets
+python3 generate.py --list-presets
+
+# Render from a preset file
+python3 generate.py --preset my-spinner.json -o output.gif
+
+# Render a built-in preset
+python3 generate.py --preset overthinking -o output.gif
+
+# Override FPS and size
+python3 generate.py --preset my-spinner.json -o output.gif --fps 25 --width 500
+```
+
+**Requirements:** `pip install playwright && python -m playwright install chromium`
+
+The CLI does not modify the generator HTML — humans use it in the browser exactly as before. Custom presets go in the `presets/` directory as JSON files.
 
 ### Players
 
