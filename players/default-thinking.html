@@ -1,0 +1,604 @@
+<!--
+  Title: Default Thinking
+  Artist: @RegularDad
+  Wave Drop: https://6529.io/waves/2e156526-042d-4b6c-9691-17c0cdd0bb9d?serialNo=1285234
+  Approved: 2026-10-09
+  License: CC0
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Default Thinking — Spinner Player</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #141020;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  canvas {
+    max-width: 100vw;
+    max-height: 100vh;
+    image-rendering: auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="preview" width="800" height="800" role="img" aria-label="Default Thinking spinner animation"></canvas>
+<script>
+"use strict";
+
+"use strict";
+
+/* ============================================================
+   0. Small helpers
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function getPath(o, p) { return p.split(".").reduce((a, k) => (a == null ? a : a[k]), o); }
+function setPath(o, p, v) {
+  const ks = p.split("."), last = ks.pop();
+  ks.reduce((a, k) => a[k], o)[last] = v;
+}
+function slug(s) {
+  return (s || "thinking-spinner").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "thinking-spinner";
+}
+function hexToRgb(h) {
+  h = (h || "#000").replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return "rgb(" + Math.round(lerp(A[0], B[0], t)) + "," + Math.round(lerp(A[1], B[1], t)) + "," + Math.round(lerp(A[2], B[2], t)) + ")";
+}
+function rgba(hex, a) {
+  const c = hexToRgb(hex);
+  return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+}
+function mixRgba(a, b, t, alpha) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return "rgba(" + Math.round(lerp(A[0], B[0], t)) + "," + Math.round(lerp(A[1], B[1], t)) + "," + Math.round(lerp(A[2], B[2], t)) + "," + alpha + ")";
+}
+let toastTimer = null;
+
+
+
+/* ============================================================
+   1. Constants
+   ============================================================ */
+const ICONS = {
+  brain: "🧠", wallet: "👛", heart: "❤️", question: "❓",
+  eye: "👁", skull: "💀", coin: "🪙", fire: "🔥"
+};
+const FONTS = {
+  sans: { family: 'system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif', weight: 600 },
+  serif: { family: 'Georgia,"Times New Roman",serif', weight: 600 },
+  mono: { family: 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace', weight: 600 },
+  boldsans: { family: 'system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif', weight: 800 }
+};
+const SPEEDS = [1200, 700, 400, 225, 125];
+const BAR_SIZES = {
+  small: [0.05, 0.02], medium: [0.075, 0.03], large: [0.14, 0.065],
+  chunky: [0.24, 0.13], slab: [0.36, 0.2]
+};
+const SIZES = { square: [800, 800], portrait: [800, 1000], landscape: [1000, 800] };
+const MAX_THOUGHTS = 16, MIN_THOUGHTS = 6;
+
+/* ============================================================
+   2. State
+   ============================================================ */
+function thought(content, type) {
+  return { type: type || "text", content: content || "", image: null, icon: "brain", pause: 0, emphasis: "normal", label: "" };
+}
+function defaultConfig() {
+  return {
+    format: "thinking-spinner", version: "1.0",
+    name: "Default Thinking",
+    title: "THINKING…",
+    showTitle: true,
+    structure: "associative",
+    center: { type: "none", text: "", image: null, icon: "brain", scale: 1 },
+    thoughts: ["Idea", "Question", "Maybe", "No", "Wait", "What if?", "Yes", "Do it"].map(t => thought(t)),
+    animation: {
+      direction: "cw", stepDuration: 400, transitionDuration: 100, loopPause: 0,
+      loopType: "continuous", holdIndex: 0, holdDuration: 1500, sequence: [], startIndex: 0
+    },
+    bars: { shape: "wedge", color: "#565270", activeColor: "#FFFFFF", radius: 0.16, length: 0.3, thickness: 0.11 },
+    trail: { length: 3, fade: 0.5, inactiveOpacity: 0.25, activeScale: 1.2, glow: 0 },
+    background: { type: "color", color: "#141020", image: null, fit: "cover" },
+    text: { color: "#EDE9F5", font: "sans", size: 60, angle: "upright", placement: "inside", fitBars: true, onBar: "auto", onBarColor: "#12101F" },
+    captions: { top: "", bottom: "" },
+    output: { preset: "square", width: 800, height: 800, fps: 0, loopCount: 0 }
+  };
+}
+
+const EXAMPLES = {
+  default: () => defaultConfig(),
+  collector: () => {
+    const c = defaultConfig();
+    c.name = "Collector Brain";
+    c.title = "COLLECTOR PROCESSING…";
+    c.structure = "associative";
+    c.center = { type: "icon", text: "", image: null, icon: "brain", scale: 1.1 };
+    c.thoughts = ["Artist", "Provenance", "Supply", "Price", "TDH", "FOMO", "Don't buy", "Cool JPEG"].map(t => thought(t));
+    c.thoughts[7].emphasis = "strong";
+    c.thoughts[7].pause = 1500;
+    c.bars = { shape: "capsule", color: "#3F3A63", activeColor: "#F5C66B", radius: 0.19, length: 0.07, thickness: 0.028 };
+    c.trail = { length: 3, fade: 0.55, inactiveOpacity: 0.2, activeScale: 1.25, glow: 14 };
+    c.background = { type: "color", color: "#100D1C", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#EDE9F5", font: "boldsans", size: 25, placement: "outside" });
+    c.captions = { top: "", bottom: "one of these is a lie" };
+    return c;
+  },
+  decision: () => {
+    const c = defaultConfig();
+    c.name = "Decision Loop";
+    c.title = "DECIDING";
+    c.structure = "sequential";
+    c.center = { type: "text", text: "?", image: null, icon: "brain", scale: 1.6 };
+    c.thoughts = ["Notice", "Weigh it", "Ask a friend", "Sleep on it", "Second guess", "Commit"].map(t => thought(t));
+    c.animation.stepDuration = 700;
+    c.animation.loopType = "pause";
+    c.animation.loopPause = 900;
+    c.bars = { shape: "wedge", color: "#2B4A46", activeColor: "#7BE0C0", radius: 0.15, length: 0.28, thickness: 0.1 };
+    c.trail = { length: 2, fade: 0.4, inactiveOpacity: 0.3, activeScale: 1.15, glow: 8 };
+    c.background = { type: "color", color: "#0B1615", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#DFF5EE", font: "serif", size: 52, placement: "inside" });
+    return c;
+  },
+  overthinking: () => {
+    const c = defaultConfig();
+    c.name = "Overthinking";
+    c.title = "IT'S FINE, EVERYTHING IS FINE";
+    c.structure = "associative";
+    c.center = { type: "text", text: "3AM", image: null, icon: "brain", scale: 1.2 };
+    c.thoughts = ["That email", "Was I rude?", "Money", "Should sleep", "Old regret", "Tomorrow", "Was I rude?", "Still awake", "The email again", "Was I rude?", "Sleep", "No"].map(t => thought(t));
+    c.animation.stepDuration = 150;
+    c.animation.direction = "ccw";
+    c.bars = { shape: "line", color: "#4A2C3C", activeColor: "#FF7A9A", radius: 0.16, length: 0.06, thickness: 0.03 };
+    c.trail = { length: 7, fade: 0.7, inactiveOpacity: 0.28, activeScale: 1.3, glow: 18 };
+    c.background = { type: "color", color: "#16090F", image: null, fit: "cover" };
+    Object.assign(c.text, { color: "#FFE6EC", font: "sans", size: 21, placement: "outside" });
+    c.captions = { bottom: "go to sleep", top: "" };
+    return c;
+  }
+};
+
+let cfg = defaultConfig();
+const ui = {
+  playing: true, time: 0, last: 0, lastActive: -1, openDetail: -1,
+  reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+};
+
+/* image cache for data URLs */
+const imgCache = new Map();
+function getImage(src) {
+  if (!src) return null;
+  if (imgCache.has(src)) {
+    const e = imgCache.get(src);
+    return e && e.complete && e.naturalWidth ? e : null;
+  }
+  const img = new Image();
+  img.onload = () => draw();
+  img.onerror = () => imgCache.set(src, null);
+  img.src = src;
+  imgCache.set(src, img);
+  return null;
+}
+
+/* ============================================================
+   3. Timeline
+   ============================================================ */
+function playOrder() {
+  const n = cfg.thoughts.length;
+  if (!n) return [0];
+  let order = [];
+  if (cfg.animation.loopType === "custom" && cfg.animation.sequence.length) {
+    order = cfg.animation.sequence.filter(i => i >= 0 && i < n);
+  }
+  if (!order.length) {
+    const s = clamp(cfg.animation.startIndex | 0, 0, n - 1);
+    for (let k = 0; k < n; k++) order.push((s + k) % n);
+  }
+  return order;
+}
+function buildTimeline() {
+  const order = playOrder();
+  const a = cfg.animation;
+  const steps = order.map((idx, pos) => {
+    let d = a.stepDuration + (cfg.thoughts[idx] ? (cfg.thoughts[idx].pause || 0) : 0);
+    if (a.loopType === "hold" && idx === a.holdIndex) d += a.holdDuration || 0;
+    if (pos === order.length - 1 && (a.loopType === "pause" || a.loopPause > 0)) d += a.loopPause || 0;
+    return { index: idx, duration: Math.max(30, d) };
+  });
+  let total = 0;
+  steps.forEach(s => { s.start = total; total += s.duration; });
+  return { steps, total, order };
+}
+function stateAt(tl, t) {
+  const tt = tl.total > 0 ? ((t % tl.total) + tl.total) % tl.total : 0;
+  let p = tl.steps.length - 1;
+  for (let i = 0; i < tl.steps.length; i++) {
+    if (tt < tl.steps[i].start + tl.steps[i].duration) { p = i; break; }
+  }
+  const s = tl.steps[p];
+  return { pos: p, index: s.index, elapsed: tt - s.start };
+}
+
+/* weights: 1 = active, 0 = idle */
+function weightsForPos(tl, pos) {
+  const n = cfg.thoughts.length;
+  const w = new Float64Array(n);
+  const len = tl.steps.length;
+  const trail = clamp(cfg.trail.length | 0, 0, 15);
+  const pw = 0.5 + cfg.trail.fade * 2;
+  for (let d = trail; d >= 0; d--) {
+    const st = tl.steps[((pos - d) % len + len) % len];
+    if (!st) continue;
+    const val = d === 0 ? 1 : Math.pow(1 - d / (trail + 1), pw);
+    if (val > w[st.index]) w[st.index] = val;
+  }
+  return w;
+}
+function currentWeights(tl, st) {
+  const cur = weightsForPos(tl, st.pos);
+  const td = cfg.animation.transitionDuration || 0;
+  if (td <= 0) return cur;
+  const e = clamp(st.elapsed / td, 0, 1);
+  if (e >= 1) return cur;
+  const ease = e < 0.5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2;
+  const prev = weightsForPos(tl, (st.pos - 1 + tl.steps.length) % tl.steps.length);
+  const out = new Float64Array(cur.length);
+  for (let i = 0; i < cur.length; i++) out[i] = lerp(prev[i] || 0, cur[i] || 0, ease);
+  return out;
+}
+
+/* ============================================================
+   4. Renderer — one function drives preview, PNG and GIF
+   ============================================================ */
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+function fontString(size, key, bold) {
+  const f = FONTS[key] || FONTS.sans;
+  return (bold ? 800 : f.weight) + " " + size + "px " + f.family;
+}
+function drawFitted(ctx, img, W, H, fit) {
+  const ir = img.width / img.height, cr = W / H;
+  if (fit === "stretch") { ctx.drawImage(img, 0, 0, W, H); return; }
+  let w, h;
+  const cover = fit !== "contain";
+  if ((ir > cr) === cover) { h = H; w = H * ir; } else { w = W; h = W / ir; }
+  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+}
+
+function drawScene(ctx, W, H, weights, activeIndex) {
+  const S = Math.min(W, H);
+  const u = S / 800;
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  /* --- background --- */
+  if (cfg.background.type === "color") {
+    ctx.fillStyle = cfg.background.color; ctx.fillRect(0, 0, W, H);
+  } else if (cfg.background.type === "image") {
+    const img = getImage(cfg.background.image);
+    if (img) drawFitted(ctx, img, W, H, cfg.background.fit);
+    else { ctx.fillStyle = "#0E0B18"; ctx.fillRect(0, 0, W, H); }
+  }
+
+  /* --- title & captions --- */
+  const titleSize = Math.round(28 * u);
+  const capSize = Math.round(17 * u);
+  const pad = 26 * u;
+  let top = pad, bottom = H - pad;
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = cfg.text.color;
+  if (cfg.captions.top) {
+    ctx.font = fontString(capSize, cfg.text.font);
+    ctx.textBaseline = "top";
+    ctx.globalAlpha = 0.72;
+    ctx.fillText(cfg.captions.top, W / 2, top, W - pad * 2);
+    ctx.globalAlpha = 1;
+    top += capSize * 1.6;
+  }
+  if (cfg.title && cfg.showTitle) {
+    ctx.font = fontString(titleSize, cfg.text.font, true);
+    ctx.textBaseline = "top";
+    ctx.fillText(cfg.title, W / 2, top, W - pad * 2);
+    top += titleSize * 1.5;
+  }
+  if (cfg.captions.bottom) {
+    ctx.font = fontString(capSize, cfg.text.font);
+    ctx.textBaseline = "bottom";
+    ctx.globalAlpha = 0.72;
+    ctx.fillText(cfg.captions.bottom, W / 2, bottom, W - pad * 2);
+    ctx.globalAlpha = 1;
+    bottom -= capSize * 1.6;
+  }
+
+  /* --- spinner geometry --- */
+  const cx = W / 2, cy = (top + bottom) / 2;
+  const availX = W / 2 - pad * 0.6;
+  const availY = (bottom - top) / 2 - pad * 0.3;
+  const n = cfg.thoughts.length;
+  if (!n) { ctx.restore(); return; }
+
+  const R = cfg.bars.radius * S;
+  const tSize = cfg.text.size * u;
+  const inside = cfg.text.placement === "inside";
+  /* the line shape only paints a fraction of the bar's thickness */
+  const thickFactor = cfg.bars.shape === "line" ? 0.28 : 1;
+  const dir = cfg.animation.direction === "ccw" ? -1 : 1;
+  const stepAngle = (Math.PI * 2) / n;
+  const angleOf = i => -Math.PI / 2 + dir * i * stepAngle;
+
+  /* measure every label first */
+  const meta = [];
+  let widest = 0, tallest = 0;
+  for (let i = 0; i < n; i++) {
+    const th = cfg.thoughts[i];
+    const strong = th.emphasis === "strong";
+    const a = angleOf(i);
+    const size = tSize * (strong ? 1.14 : 1);
+    let wpx = 0, hpx = size * 1.1;
+    if (th.type === "text") {
+      ctx.font = fontString(size, cfg.text.font, strong);
+      wpx = ctx.measureText(th.content || "").width;
+    } else if (th.type === "icon") {
+      wpx = size * 1.25; hpx = size * 1.25;
+    } else {
+      wpx = size * 2.2; hpx = size * 2.2;
+    }
+    meta.push({ a, ca: Math.cos(a), sa: Math.sin(a), size, wpx, hpx, strong, iscale: 1 });
+    widest = Math.max(widest, wpx);
+    tallest = Math.max(tallest, hpx);
+  }
+
+  const isWedge = cfg.bars.shape === "wedge";
+  let BL = cfg.bars.length * S;
+  let BT = cfg.bars.thickness * S;
+  if (inside && cfg.text.fitBars) {
+    BL = Math.max(BL, widest + tSize * 0.9);
+    /* a wedge takes its width from the spacing between thoughts, not from thickness */
+    if (!isWedge) BT = Math.max(BT, (tallest * 1.35) / thickFactor);
+  }
+  const labelR = R + BL + 18 * u;
+
+  /* auto-fit the whole spinner inside the canvas */
+  const halfT = isWedge ? 0 : (BT * thickFactor * cfg.trail.activeScale) / 2;
+  let maxX = R + BL * 1.08 + halfT, maxY = R + BL * 1.08 + halfT;
+  if (inside) {
+    /* labels shrink to stay within the bar they sit on. A wedge narrows toward
+       the middle, so measure the room at the label's inner end, not its centre. */
+    const roomW = BL - tSize * 0.45;
+    meta.forEach(m => {
+      const roomH = isWedge
+        ? Math.max(6, (R + BL / 2 - Math.min(m.wpx, BL) / 2) * stepAngle * 0.64 * 0.82)
+        : BT * thickFactor * 0.84;
+      m.iscale = clamp(Math.min(1, roomW / Math.max(1, m.wpx), roomH / Math.max(1, m.hpx)), 0.12, 1);
+    });
+  } else {
+    for (let i = 0; i < n; i++) {
+      const m = meta[i];
+      if (cfg.text.angle === "radial") {
+        maxX = Math.max(maxX, Math.abs(m.ca) * (labelR + m.wpx) + m.hpx * 0.6);
+        maxY = Math.max(maxY, Math.abs(m.sa) * (labelR + m.wpx) + m.hpx * 0.6);
+      } else {
+        const anchor = m.ca > 0.25 ? 0 : m.ca < -0.25 ? -1 : -0.5;
+        const x0 = m.ca * labelR + anchor * m.wpx, x1 = x0 + m.wpx;
+        maxX = Math.max(maxX, Math.abs(x0), Math.abs(x1));
+        maxY = Math.max(maxY, Math.abs(m.sa * labelR) + m.hpx * 0.75);
+      }
+    }
+  }
+  const fit = clamp(Math.min(1, availX / Math.max(1, maxX), availY / Math.max(1, maxY)), 0.08, 1);
+
+  ctx.translate(cx, cy);
+  ctx.scale(fit, fit);
+
+  /* --- bars --- */
+  for (let i = 0; i < n; i++) {
+    const w = weights[i] || 0;
+    const m = meta[i];
+    const alpha = cfg.trail.inactiveOpacity + (1 - cfg.trail.inactiveOpacity) * w;
+    const color = mixRgba(cfg.bars.color, cfg.bars.activeColor, w, alpha);
+    const sc = 1 + (cfg.trail.activeScale - 1) * w;
+    const thick = BT * sc * (m.strong ? 1.25 : 1);
+    const len = BL * (1 + (sc - 1) * 0.5);
+
+    ctx.save();
+    ctx.rotate(m.a);
+    ctx.fillStyle = color;
+    if (cfg.trail.glow > 0 && w > 0.02) {
+      ctx.shadowColor = rgba(cfg.bars.activeColor, w);
+      ctx.shadowBlur = cfg.trail.glow * u * w;
+    }
+    const sh = cfg.bars.shape;
+    if (sh === "wedge") {
+      const half = stepAngle * 0.32 * (1 + (sc - 1) * 0.3);
+      ctx.beginPath();
+      ctx.arc(0, 0, R, -half, half);
+      ctx.arc(0, 0, R + len, half, -half, true);
+      ctx.closePath(); ctx.fill();
+    } else if (sh === "rectangle") {
+      ctx.fillRect(R, -thick / 2, len, thick);
+    } else if (sh === "line") {
+      const t2 = Math.max(1.2 * u, thick * 0.28);
+      roundRectPath(ctx, R, -t2 / 2, len, t2, t2 / 2); ctx.fill();
+    } else if (sh === "capsule") {
+      roundRectPath(ctx, R, -thick / 2, len, thick, thick / 2); ctx.fill();
+    } else {
+      roundRectPath(ctx, R, -thick / 2, len, thick, thick * 0.34); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* --- labels --- */
+  for (let i = 0; i < n; i++) {
+    const th = cfg.thoughts[i], m = meta[i], w = weights[i] || 0;
+    const alpha = clamp(cfg.trail.inactiveOpacity + (1 - cfg.trail.inactiveOpacity) * w, 0.08, 1);
+    const size = m.size * m.iscale * (1 + (cfg.trail.activeScale - 1) * w * 0.45);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (inside) {
+      /* sit the label on the bar, reading outward, flipped on the left half */
+      const sc = 1 + (cfg.trail.activeScale - 1) * w;
+      const len = BL * (1 + (sc - 1) * 0.5);
+      ctx.rotate(m.a);
+      ctx.translate(R + len / 2, 0);
+      if (m.ca < -0.01) ctx.rotate(Math.PI);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      drawLabel(ctx, th, 0, 0, size, w, onBarColor(w, alpha));
+      ctx.restore();
+      continue;
+    }
+    if (cfg.trail.glow > 0 && w > 0.5) {
+      ctx.shadowColor = rgba(cfg.bars.activeColor, w * 0.9);
+      ctx.shadowBlur = cfg.trail.glow * u * w * 0.8;
+    }
+    if (cfg.text.angle === "radial") {
+      ctx.rotate(m.a);
+      const flip = m.ca < -0.01;
+      ctx.translate(labelR, 0);
+      if (flip) { ctx.rotate(Math.PI); }
+      ctx.textAlign = flip ? "right" : "left";
+      ctx.textBaseline = "middle";
+      drawLabel(ctx, th, 0, 0, size, w);
+    } else {
+      const x = m.ca * labelR, y = m.sa * labelR;
+      ctx.textAlign = m.ca > 0.25 ? "left" : m.ca < -0.25 ? "right" : "center";
+      ctx.textBaseline = m.sa > 0.5 ? "top" : m.sa < -0.5 ? "bottom" : "middle";
+      drawLabel(ctx, th, x, y, size, w);
+    }
+    ctx.restore();
+  }
+
+  /* --- center --- */
+  const c = cfg.center;
+  if (c.type !== "none") {
+    const cs = (c.scale || 1);
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (c.type === "text" && c.text) {
+      ctx.fillStyle = cfg.bars.activeColor;
+      ctx.font = fontString(Math.round(26 * u * cs), cfg.text.font, true);
+      ctx.fillText(c.text, 0, 0, R * 1.7);
+    } else if (c.type === "icon") {
+      ctx.font = Math.round(46 * u * cs) + "px system-ui,'Apple Color Emoji','Segoe UI Emoji',sans-serif";
+      ctx.fillText(ICONS[c.icon] || ICONS.brain, 0, 0);
+    } else if (c.type === "image") {
+      const img = getImage(c.image);
+      if (img) {
+        const box = R * 1.25 * cs;
+        const ir = img.width / img.height;
+        let w2 = box, h2 = box;
+        if (ir > 1) h2 = box / ir; else w2 = box * ir;
+        ctx.drawImage(img, -w2 / 2, -h2 / 2, w2, h2);
+      }
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* picks a legible colour for a label sitting on top of a bar */
+function onBarColor(w, alpha) {
+  if (cfg.text.onBar === "custom") return cfg.text.onBarColor;
+  const bg = cfg.background.type === "color" ? hexToRgb(cfg.background.color) : [18, 16, 32];
+  const a = hexToRgb(cfg.bars.color), b = hexToRgb(cfg.bars.activeColor);
+  let L = 0;
+  const coef = [0.2126, 0.7152, 0.0722];
+  for (let k = 0; k < 3; k++) {
+    const bar = lerp(a[k], b[k], w);
+    L += coef[k] * lerp(bg[k], bar, alpha);
+  }
+  return L / 255 > 0.55 ? "#0B0A12" : "#FFFFFF";
+}
+
+function drawLabel(ctx, th, x, y, size, w, override) {
+  if (th.type === "text") {
+    ctx.fillStyle = override || (w > 0.55 ? cfg.bars.activeColor : cfg.text.color);
+    ctx.font = fontString(size, cfg.text.font, th.emphasis === "strong");
+    ctx.fillText(th.content || "", x, y);
+  } else if (th.type === "icon") {
+    ctx.font = Math.round(size * 1.25) + "px system-ui,'Apple Color Emoji','Segoe UI Emoji',sans-serif";
+    ctx.fillText(ICONS[th.icon] || ICONS.brain, x, y);
+  } else if (th.type === "image") {
+    const img = getImage(th.image);
+    const box = size * 2.2;
+    if (img) {
+      const ir = img.width / img.height;
+      let w2 = box, h2 = box;
+      if (ir > 1) h2 = box / ir; else w2 = box * ir;
+      let ox = ctx.textAlign === "left" ? 0 : ctx.textAlign === "right" ? -w2 : -w2 / 2;
+      let oy = ctx.textBaseline === "top" ? 0 : ctx.textBaseline === "bottom" ? -h2 : -h2 / 2;
+      ctx.drawImage(img, x + ox, y + oy, w2, h2);
+    } else {
+      ctx.fillStyle = override || cfg.text.color;
+      ctx.font = fontString(size * 0.7, cfg.text.font);
+      ctx.fillText("?", x, y);
+    }
+  }
+}
+
+/* ============================================================
+   5. Live preview loop
+   ============================================================ */
+const canvas = document.getElementById("preview");
+const ctx = canvas.getContext("2d");
+
+function outSize() {
+  if (cfg.output.preset === "custom") {
+    return [clamp(cfg.output.width | 0, 120, 1600), clamp(cfg.output.height | 0, 120, 1600)];
+  }
+  return SIZES[cfg.output.preset] || SIZES.square;
+}
+
+function draw() {
+  const [W, H] = outSize();
+  if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+  const tl = buildTimeline();
+  const st = stateAt(tl, ui.time);
+  const w = currentWeights(tl, st);
+  drawScene(ctx, W, H, w, st.index);
+
+  if (st.index !== ui.lastActive) { ui.lastActive = st.index; }
+}
+
+function tick(now) {
+  if (!ui.last) ui.last = now;
+  const dt = Math.min(120, now - ui.last);
+  ui.last = now;
+  if (ui.playing) { ui.time += dt; draw(); }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// Start animation
+draw();
+requestAnimationFrame(tick);
+
+</script>
+</body>
+</html>
